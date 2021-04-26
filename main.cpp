@@ -124,10 +124,24 @@ int main() {
 
 			std::string hpdate = hpDateResults[0]["gamedate"];
 
-			std::string hpHitQuery = "select distinct inningtype,inningnum,batpos,gamenumber from PBP where hitterid="+std::to_string(hitterId)+" and pitcherId="+std::to_string(pitcherId)+" and gamedate='"+hpdate+"' and event > 0;";
+			std::string hpHitQuery = "select distinct inningtype,inningnum,batpos,gamenumber,event from PBP where hitterid="+std::to_string(hitterId)+" and pitcherId="+std::to_string(pitcherId)+" and gamedate='"+hpdate+"';";
 			std::vector<std::map<std::string, std::string>> hpHitResults = DBWrapper::queryDatabase(db, hpHitQuery);
 
-			if (hpHitResults.empty()) {
+			bool showResults = false;
+			for (std::map<std::string, std::string> hpRes : hpHitResults) {
+				try {
+					int evVal = std::stoi(hpRes["event"]);
+					if (evVal > 0) {
+						showResults = true;
+						break;
+					}
+				}
+				catch (std::exception &ex) {
+					std::cout << ex.what() << std::endl;
+				}
+			}
+
+			if (!showResults) {
 				continue;
 			}
 
@@ -140,21 +154,35 @@ int main() {
 
 			std::string hudate = huDateResults[0]["gamedate"];
 
-			std::string huHitQuery = "select distinct inningtype,inningnum,batpos,pitcherid,gamenumber from PBP where hitterid="+std::to_string(hitterId)+" and umpire='"+umpire+"' and gamedate='"+hudate+"' and event > 0;";
+			std::string huHitQuery = "select distinct inningtype,inningnum,batpos,pitcherid,gamenumber,event from PBP where hitterid="+std::to_string(hitterId)+" and umpire='"+umpire+"' and gamedate='"+hudate+"';";
 			std::vector<std::map<std::string, std::string>> huHitResults = DBWrapper::queryDatabase(db, huHitQuery);
 
-			if (huHitResults.empty()) {
+			showResults = false;
+			for (std::map<std::string, std::string> huRes : huHitResults) {
+				try {
+					int evVal = std::stoi(huRes["event"]);
+					if (evVal > 0) {
+						showResults = true;
+						break;
+					}
+				}
+				catch (std::exception & ex) {
+					std::cout << ex.what() << std::endl;
+				}
+			}
+
+			if (!showResults) {
 				continue;
 			}
 
 			for (std::map<std::string, std::string> hpRow : hpHitResults) {
-				ofs << hpdate << "," << row["name"] << "," << pitcher << "," << pitcherThrows << "," << hpRow["inningtype"] << "," << hpRow["inningnum"] << "," << hpRow["batpos"] << "," << hpRow["gamenumber"] << std::endl;
+				ofs << hpdate << "," << row["name"] << "," << pitcher << "," << pitcherThrows << "," << hpRow["inningtype"] << "," << hpRow["inningnum"] << "," << hpRow["batpos"] << "," << hpRow["event"] << std::endl;
 			}
 
 			for (std::map<std::string, std::string> huRow : huHitResults) {
 				std::string throwQuery = "select distinct throws from players where id="+huRow["pitcherid"]+";";
 				std::vector<std::map<std::string, std::string>> throwResult = DBWrapper::queryDatabase(db, throwQuery);
-				ofs << hudate << "," << row["name"] << "," << umpire << "," << throwResult[0]["throws"] << "," << huRow["inningtype"] << "," << huRow["inningnum"] << "," << huRow["batpos"] << "," << huRow["gamenumber"] << std::endl;
+				ofs << hudate << "," << row["name"] << "," << umpire << "," << throwResult[0]["throws"] << "," << huRow["inningtype"] << "," << huRow["inningnum"] << "," << huRow["batpos"] << "," << huRow["event"] << std::endl;
 			}
 
 			ofs << std::endl;
