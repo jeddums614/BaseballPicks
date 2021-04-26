@@ -74,7 +74,13 @@ int main() {
 		std::string query = "select id,throws from players where position='P' and (name='" + pitcher +"' or alternatename like '%" + pitcher + "%');";
 		std::vector<std::map<std::string, std::string>> res = DBWrapper::queryDatabase(db, query);
 		if (res.empty()) {
-			continue;
+			if (pitcher.compare("Shohei Ohtani") == 0) {
+				query = "select id,throws from players where name='"+pitcher+"';";
+				res = DBWrapper::queryDatabase(db, query);
+			}
+			else {
+				continue;
+			}
 		}
 
 		int pitcherId = 0;
