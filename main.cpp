@@ -46,19 +46,13 @@ int main() {
 	std::ifstream ifs("todaymatchups.txt");
 	std::string line = "";
 
-	enum class teamType { HOME, AWAY };
-	int  side = 0;
-	teamType tmType;
 	while (std::getline(ifs, line)) {
 		std::cout << line << std::endl;
 		std::vector<std::string> gameParts = Utils::split(line);
 
-		++side;
-		if (side % 2 == 0) {
-			tmType = teamType::HOME;
-		}
-		else {
-			tmType = teamType::AWAY;
+		if (gameParts.size() != 5) {
+			std::cout << "Not all info filled out in todaymatchups.txt for this line" << std::endl;
+			continue;
 		}
 
 		std::string pitcher = gameParts[0];
@@ -98,6 +92,27 @@ int main() {
 		if (pitcherId == std::numeric_limits<int>::min())
 		{
 			continue;
+		}
+
+		std::string puDateQuery = "select distinct gamedate from PBP where pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and event >= 0 order by gamedate desc limit 1;";
+		std::vector<std::map<std::string, std::string>> puDateResults = DBWrapper::queryDatabase(db, puDateQuery);
+
+		if (!puDateResults.empty()) {
+			for (std::map<std::string, std::string> puDres : puDateResults) {
+				std::cout << puDres["gamedate"] << " - ";
+				std::string batposQuery = "select distinct p.batpos,h.hits from PBP p inner join players h on p.hitterid=h.id where p.pitcherid="+std::to_string(pitcherId)+" and p.gamedate='"+puDres["gamedate"]+"' and p.event > 0 order by p.batpos;";
+				std::vector<std::map<std::string, std::string>> batposResults = DBWrapper::queryDatabase(db, batposQuery);
+
+				std::string batposOutput = "";
+				for (std::map<std::string, std::string> bpres : batposResults) {
+					if (!batposOutput.empty()) {
+						batposOutput += ",";
+					}
+					batposOutput += bpres["batpos"] + " (" + bpres["hits"] + ")";
+				}
+
+				std::cout << batposOutput << std::endl;
+			}
 		}
 
 		query = "select name,id from players where position != 'P' and (team='" + opponent +"' or team like '%" + opponent + "');";
