@@ -117,6 +117,9 @@ int main() {
 				}
 			}
 		}
+		else {
+			continue;
+		}
 
 		query = "select name,id from players where position != 'P' and (team='" + opponent +"' or team like '%" + opponent + "');";
 		res = DBWrapper::queryDatabase(db, query);
@@ -142,36 +145,31 @@ int main() {
 			std::string hpDateQuery = "select distinct gamedate from PBP where hitterid="+std::to_string(hitterId)+" and pitcherId="+std::to_string(pitcherId)+" and isHitterStarter=1 and isPitcherStarter=1 and event >= 0 order by gamedate desc limit 1;";
 			std::vector<std::map<std::string, std::string>> hpDateResults = DBWrapper::queryDatabase(db, hpDateQuery);
 
-			if (hpDateResults.empty() && puDateResults.empty()) {
+			if (hpDateResults.empty()) {
 				continue;
 			}
 
+			std::string hpdate = hpDateResults[0]["gamedate"];
+
+			std::string hpHitQuery = "select distinct inningtype,inningnum,batpos,gamenumber,event from PBP where hitterid="+std::to_string(hitterId)+" and pitcherId="+std::to_string(pitcherId)+" and gamedate='"+hpdate+"';";
+			std::vector<std::map<std::string, std::string>> hpHitResults = DBWrapper::queryDatabase(db, hpHitQuery);
+
 			bool showResults = false;
-			std::string hpdate = "";
-			std::vector<std::map<std::string, std::string>> hpHitResults;
-			if (!hpDateResults.empty()) {
-				hpdate = hpDateResults[0]["gamedate"];
-
-				std::string hpHitQuery = "select distinct inningtype,inningnum,batpos,gamenumber,event from PBP where hitterid="+std::to_string(hitterId)+" and pitcherId="+std::to_string(pitcherId)+" and gamedate='"+hpdate+"';";
-				hpHitResults = DBWrapper::queryDatabase(db, hpHitQuery);
-
-				showResults = false;
-				for (std::map<std::string, std::string> hpRes : hpHitResults) {
-					try {
-						int evVal = std::stoi(hpRes["event"]);
-						if (evVal > 0) {
-							showResults = true;
-							break;
-						}
-					}
-					catch (std::exception &ex) {
-						std::cout << ex.what() << std::endl;
+			for (std::map<std::string, std::string> hpRes : hpHitResults) {
+				try {
+					int evVal = std::stoi(hpRes["event"]);
+					if (evVal > 0) {
+						showResults = true;
+						break;
 					}
 				}
-
-				if (!showResults) {
-					continue;
+				catch (std::exception &ex) {
+					std::cout << ex.what() << std::endl;
 				}
+			}
+
+			if (!showResults) {
+				continue;
 			}
 
 			std::string huDateQuery = "select distinct gamedate from PBP where hitterid="+std::to_string(hitterId)+" and umpire='"+umpire+"' and isHitterStarter=1 and event >= 0 order by gamedate desc limit 1;";
