@@ -169,6 +169,7 @@ int main() {
 			}
 
 			if (!showResults) {
+				std::cout << "skipping " << row["name"] << std::endl;
 				continue;
 			}
 
@@ -199,6 +200,7 @@ int main() {
 			}
 
 			if (!showResults) {
+				std::cout << "skipping " << row["name"] << std::endl;
 				continue;
 			}
 
