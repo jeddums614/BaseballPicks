@@ -12,6 +12,7 @@
 #include <chrono>
 #include <algorithm>
 #include <filesystem>
+#include <cmath>
 #include "Utils.h"
 
 int main() {
@@ -207,6 +208,28 @@ int main() {
 				std::vector<std::map<std::string, std::string>> throwResult = DBWrapper::queryDatabase(db, throwQuery);
 				ofs << hudate << "," << row["name"] << "," << umpire << "," << throwResult[0]["throws"] << "," << huRow["gametime"] << "," << huRow["isHitterStarter"] << "," << huRow["isPitcherStarter"] << "," << huRow["inningtype"] << "," << huRow["inningnum"] << "," << huRow["batpos"] << "," << huRow["event"] << std::endl;
 			}
+
+			query = "select (select count(*) from PBP where hitterid="+std::to_string(hitterId)+" and gamedate >= date('now','-7 days') and event >= 0) as atbats,";
+			query += "(select count(*) from PBP where hitterid="+std::to_string(hitterId)+" and gamedate >= date('now','-7 days') and event > 0) as hits,";
+			query += "(select count(*) from PBP where hitterid="+std::to_string(hitterId)+" and gamedate >= date('now','-7 days') and event = 4) as hr,";
+			query += "(select count(*) from PBP where hitterid="+std::to_string(hitterId)+" and gamedate >= date('now','-7 days') and count like '%-3') as strikeout,";
+			query += "(select count(*) from PBP where hitterid="+std::to_string(hitterId)+" and gamedate >= date('now','-7 days') and event = -1 and count not like '4-%') as sf;";
+
+			std::vector<std::map<std::string, std::string>> babipRes = DBWrapper::queryDatabase(db, query);
+
+			double hits = std::stod(babipRes[0]["hits"]);
+			double hr = std::stod(babipRes[0]["hr"]);
+			double atbats = std::stod(babipRes[0]["atbats"]);
+			double sf = std::stod(babipRes[0]["sf"]);
+			double strikeout = std::stod(babipRes[0]["strikeout"]);
+
+			double denominator = (atbats-strikeout-hr+sf);
+			double babip = 0;
+			if (denominator > 0) {
+				babip = (hits-hr)/denominator;
+			}
+
+			ofs << (std::round( babip * 1000.0 ) / 1000.0) << std::endl;
 
 			ofs << std::endl;
 
