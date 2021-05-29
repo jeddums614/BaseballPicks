@@ -95,7 +95,7 @@ int main() {
 			continue;
 		}
 
-		std::string puDateQuery = "select distinct gamedate from PBP where pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and event >= 0 order by gamedate desc limit 1;";
+		std::string puDateQuery = "select distinct gamedate from PBP where pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1 and event >= 0 order by gamedate desc limit 1;";
 		std::vector<std::map<std::string, std::string>> puDateResults = DBWrapper::queryDatabase(db, puDateQuery);
 
 		if (!puDateResults.empty()) {
@@ -115,12 +115,12 @@ int main() {
 					}
 
 					std::cout << batposOutput << std::endl;
-					ofs << pitcher << "," << puDres["gamedate"] << ",\"" << batposOutput << "\"" << std::endl;
+
+					ofs << puDres["gamedate"] << "," << pitcher << "," << umpire << ",\"" << batposOutput << "\"" << std::endl;
+
+					ofs << std::endl;
 				}
 			}
-		}
-		else {
-			continue;
 		}
 
 		query = "select name,id from players where position != 'P' and (team='" + opponent +"' or team like '%" + opponent + "');";
@@ -146,6 +146,10 @@ int main() {
 
 			std::string hpDateQuery = "select distinct gamedate from PBP where hitterid="+std::to_string(hitterId)+" and pitcherId="+std::to_string(pitcherId)+" and isHitterStarter=1 and isPitcherStarter=1 and event >= 0 order by gamedate desc limit 1;";
 			std::vector<std::map<std::string, std::string>> hpDateResults = DBWrapper::queryDatabase(db, hpDateQuery);
+
+			if (hpDateResults.empty() && puDateResults.empty()) {
+				continue;
+			}
 
 			bool showResults = false;
 			std::string hpdate = "";
@@ -208,28 +212,6 @@ int main() {
 				std::vector<std::map<std::string, std::string>> throwResult = DBWrapper::queryDatabase(db, throwQuery);
 				ofs << hudate << "," << row["name"] << "," << umpire << "," << throwResult[0]["throws"] << "," << huRow["gametime"] << "," << huRow["isHitterStarter"] << "," << huRow["isPitcherStarter"] << "," << huRow["inningtype"] << "," << huRow["inningnum"] << "," << huRow["batpos"] << "," << huRow["event"] << std::endl;
 			}
-
-			query = "select (select count(*) from PBP where hitterid="+std::to_string(hitterId)+" and gamedate >= date('now','-7 days') and event >= 0) as atbats,";
-			query += "(select count(*) from PBP where hitterid="+std::to_string(hitterId)+" and gamedate >= date('now','-7 days') and event > 0) as hits,";
-			query += "(select count(*) from PBP where hitterid="+std::to_string(hitterId)+" and gamedate >= date('now','-7 days') and event = 4) as hr,";
-			query += "(select count(*) from PBP where hitterid="+std::to_string(hitterId)+" and gamedate >= date('now','-7 days') and count like '%-3') as strikeout,";
-			query += "(select count(*) from PBP where hitterid="+std::to_string(hitterId)+" and gamedate >= date('now','-7 days') and event = -1 and count not like '4-%') as sf;";
-
-			std::vector<std::map<std::string, std::string>> babipRes = DBWrapper::queryDatabase(db, query);
-
-			double hits = std::stod(babipRes[0]["hits"]);
-			double hr = std::stod(babipRes[0]["hr"]);
-			double atbats = std::stod(babipRes[0]["atbats"]);
-			double sf = std::stod(babipRes[0]["sf"]);
-			double strikeout = std::stod(babipRes[0]["strikeout"]);
-
-			double denominator = (atbats-strikeout-hr+sf);
-			double babip = 0;
-			if (denominator > 0) {
-				babip = (hits-hr)/denominator;
-			}
-
-			ofs << (std::round( babip * 1000.0 ) / 1000.0) << std::endl;
 
 			ofs << std::endl;
 
