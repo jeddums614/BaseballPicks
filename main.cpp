@@ -116,7 +116,7 @@ int main() {
 
 					std::cout << batposOutput << std::endl;
 
-					ofs << puDres["gamedate"] << "," << pitcher << "," << umpire << ",\"" << batposOutput << "\"" << std::endl;
+					ofs << puDres["gamedate"] << "," << pitcher << "," << umpire << "," << pitcherThrows << ",\"" << batposOutput << "\"" << std::endl;
 
 					ofs << std::endl;
 				}
