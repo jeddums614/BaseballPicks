@@ -35,7 +35,7 @@ std::map<std::string, int> buildMatchups(const std::string & fn) {
 }
 
 bool isDoubleHeader(sqlite3* db, const std::string & dt, const std::string & awteam) {
-	std::string query = "select distinct gamedate from PBP where gamedate='"+dt+"' and (awayteam='"+awteam+"' or hometeam='"+awteam+"');";
+	std::string query = "select distinct gametime from PBP where gamedate='"+dt+"' and (awayteam='"+awteam+"' or hometeam='"+awteam+"');";
 	std::vector<std::map<std::string, std::string>> res = DBWrapper::queryDatabase(db, query);
 
 	return res.size() > 1;
