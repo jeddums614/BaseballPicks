@@ -15,6 +15,25 @@
 #include <cmath>
 #include "Utils.h"
 
+std::map<std::string, int> buildMatchups(const std::string & fn) {
+	std::map<std::string, int> retVal;
+
+	std::ifstream ifs(fn);
+
+	std::string line;
+
+	while (std::getline(ifs, line)) {
+		std::stringstream ss{line};
+
+		std::string spLine;
+
+		while (std::getline(ss, spLine, ',')) {
+			++retVal[spLine];
+		}
+	}
+	return retVal;
+}
+
 int main() {
 
 	sqlite3* db;
@@ -42,6 +61,8 @@ int main() {
 		return (1);
 	}
 
+	std::map<std::string, int> teamGames = buildMatchups("todaymatchups.txt");
+
 	const std::string outputFile = "Results/"+datestr+".csv";
 	std::ofstream ofs(outputFile);
 	std::ifstream ifs("todaymatchups.txt");
@@ -62,7 +83,7 @@ int main() {
 		std::string ballpark = gameParts[3];
 		std::string gametime = gameParts[4];
 
-		if(umpire.empty() || pitcher.empty()) {
+		if(umpire.empty() || pitcher.empty() || teamGames[opponent] > 1) {
 			continue;
 		}
 
@@ -204,13 +225,13 @@ int main() {
 			}
 
 			for (std::map<std::string, std::string> hpRow : hpHitResults) {
-				ofs << hpdate << "," << row["name"] << "," << pitcher << "," << pitcherThrows << "," << hpRow["gametime"] << "," << hpRow["isHitterStarter"] << "," << hpRow["isPitcherStarter"] << "," << hpRow["inningtype"] << "," << hpRow["inningnum"] << "," << hpRow["batpos"] << "," << hpRow["event"] << std::endl;
+				ofs << hpdate << "," << row["name"] << "," << pitcher << "," << pitcherThrows << "," << hpRow["gametime"] << "," << hpRow["gamenumber"] << "," << hpRow["isHitterStarter"] << "," << hpRow["isPitcherStarter"] << "," << hpRow["inningtype"] << "," << hpRow["inningnum"] << "," << hpRow["batpos"] << "," << hpRow["event"] << std::endl;
 			}
 
 			for (std::map<std::string, std::string> huRow : huHitResults) {
 				std::string throwQuery = "select distinct throws from players where id="+huRow["pitcherid"]+";";
 				std::vector<std::map<std::string, std::string>> throwResult = DBWrapper::queryDatabase(db, throwQuery);
-				ofs << hudate << "," << row["name"] << "," << umpire << "," << throwResult[0]["throws"] << "," << huRow["gametime"] << "," << huRow["isHitterStarter"] << "," << huRow["isPitcherStarter"] << "," << huRow["inningtype"] << "," << huRow["inningnum"] << "," << huRow["batpos"] << "," << huRow["event"] << std::endl;
+				ofs << hudate << "," << row["name"] << "," << umpire << "," << throwResult[0]["throws"] << "," << huRow["gametime"] << "," << huRow["gamenumber"] << "," << huRow["isHitterStarter"] << "," << huRow["isPitcherStarter"] << "," << huRow["inningtype"] << "," << huRow["inningnum"] << "," << huRow["batpos"] << "," << huRow["event"] << std::endl;
 			}
 
 			ofs << std::endl;
