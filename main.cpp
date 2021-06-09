@@ -207,6 +207,11 @@ int main() {
 						continue;
 					}
 				}
+				else {
+					if (puDateResults.empty()) {
+						continue;
+					}
+				}
 			}
 
 			std::string huDateQuery = "select distinct gamedate,awayteam from PBP where hitterid="+std::to_string(hitterId)+" and umpire='"+umpire+"' and isHitterStarter=1 and event >= 0 order by gamedate desc limit 1;";
