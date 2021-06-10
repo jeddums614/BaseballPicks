@@ -73,6 +73,8 @@ int main() {
 
 	const std::string outputFile = "Results/"+datestr+".csv";
 	std::ofstream ofs(outputFile);
+	const std::string skipFile = "Skip/"+datestr+".txt";
+	std::ofstream skipfs(skipFile);
 	std::ifstream ifs("todaymatchups.txt");
 	std::string line = "";
 
@@ -204,6 +206,7 @@ int main() {
 
 					if (!showResults) {
 						std::cout << "hpShowResults = false, skipping " << row["name"] << std::endl;
+						skipfs << row["name"] << std::endl;
 						continue;
 					}
 				}
@@ -242,6 +245,7 @@ int main() {
 
 			if (!showResults) {
 				std::cout << "huShowResults = false, skipping " << row["name"] << std::endl;
+				skipfs << row["name"] << std::endl;
 				continue;
 			}
 
@@ -266,6 +270,11 @@ int main() {
 	ofs.close();
 	if (std::filesystem::is_empty(outputFile)) {
 		std::filesystem::remove(outputFile.c_str());
+	}
+
+	skipfs.close();
+	if (std::filesystem::is_empty(skipFile)) {
+		std::filesystem::remove(skipFile.c_str());
 	}
 	return (0);
 }
