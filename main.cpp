@@ -15,35 +15,10 @@
 #include <cmath>
 #include "Utils.h"
 
-std::map<std::string, int> buildMatchups(const std::string & fn) {
-	std::map<std::string, int> retVal;
-
-	std::ifstream ifs(fn);
-
-	std::string line;
-
-	while (std::getline(ifs, line)) {
-		std::stringstream ss{line};
-
-		std::string spLine;
-
-		while (std::getline(ss, spLine, ',')) {
-			++retVal[spLine];
-		}
-	}
-	return retVal;
-}
-
-bool isDoubleHeader(sqlite3* db, const std::string & dt, const std::string & awteam) {
-	std::string query = "select distinct gametime from PBP where gamedate='"+dt+"' and (awayteam='"+awteam+"' or hometeam='"+awteam+"');";
-	std::vector<std::map<std::string, std::string>> res = DBWrapper::queryDatabase(db, query);
-
-	return res.size() > 1;
-
-}
+enum class teamType { AWAY, HOME };
 
 int main() {
-
+    const std::array<char, 3> handArr = {'R','L','S'};
 	sqlite3* db;
 
 	auto todaydate = std::chrono::system_clock::now();
@@ -69,12 +44,8 @@ int main() {
 		return (1);
 	}
 
-	std::map<std::string, int> teamGames = buildMatchups("todaymatchups.txt");
+	int side = 0;
 
-	const std::string outputFile = "Results/"+datestr+".csv";
-	std::ofstream ofs(outputFile);
-	const std::string skipFile = "Skip/"+datestr+".txt";
-	std::ofstream skipfs(skipFile);
 	std::ifstream ifs("todaymatchups.txt");
 	std::string line = "";
 
@@ -84,6 +55,7 @@ int main() {
 
 		if (gameParts.size() != 5) {
 			std::cout << "Not all info filled out in todaymatchups.txt for this line" << std::endl;
+			++side;
 			continue;
 		}
 
@@ -93,9 +65,10 @@ int main() {
 		std::string ballpark = gameParts[3];
 		std::string gametime = gameParts[4];
 
-		if(umpire.empty() || pitcher.empty() || teamGames[opponent] > 1) {
+		/*if(umpire.empty() || pitcher.empty()) {
+			++side;
 			continue;
-		}
+		}*/
 
 		std::string query = "select id,throws from players where position='P' and (name='" + pitcher +"' or alternatename like '%" + pitcher + "%');";
 		std::vector<std::map<std::string, std::string>> res = DBWrapper::queryDatabase(db, query);
@@ -105,6 +78,7 @@ int main() {
 				res = DBWrapper::queryDatabase(db, query);
 			}
 			else {
+				++side;
 				continue;
 			}
 		}
@@ -123,158 +97,77 @@ int main() {
 
 		if (pitcherId == std::numeric_limits<int>::min())
 		{
+			++side;
 			continue;
 		}
 
-		std::string puDateQuery = "select distinct gamedate,awayteam from PBP where pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1 and event >= 0 order by gamedate desc limit 1;";
+		std::string puDateQuery = "select distinct gamedate,awayteam from PBP where pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1 and event >= 0 order by gamedate desc;";
 		std::vector<std::map<std::string, std::string>> puDateResults = DBWrapper::queryDatabase(db, puDateQuery);
 
 		if (!puDateResults.empty()) {
-			if (!isDoubleHeader(db, puDateResults[0]["gamedate"], puDateResults[0]["awayteam"])) {
-				for (std::map<std::string, std::string> puDres : puDateResults) {
-					std::string batposQuery = "select distinct p.batpos,h.hits from PBP p inner join players h on p.hitterid=h.id where p.pitcherid="+std::to_string(pitcherId)+" and p.gamedate='"+puDres["gamedate"]+"' and p.event > 0 order by p.batpos;";
-					std::vector<std::map<std::string, std::string>> batposResults = DBWrapper::queryDatabase(db, batposQuery);
+			for (std::map<std::string, std::string> puDres : puDateResults) {
+				std::string batposQuery = "select distinct p.batpos,h.hits from PBP p inner join players h on p.hitterid=h.id where p.pitcherid="+std::to_string(pitcherId)+" and p.gamedate='"+puDres["gamedate"]+"' and p.isHitterStarter=1 and p.event > 0 order by p.batpos;";
+				std::vector<std::map<std::string, std::string>> batposResults = DBWrapper::queryDatabase(db, batposQuery);
 
-					if (!batposResults.empty()) {
-						std::cout << puDres["gamedate"] << " - ";
+				if (!batposResults.empty()) {
+					std::cout << puDres["gamedate"] << " - ";
 
-						std::string batposOutput = "";
-						for (std::map<std::string, std::string> bpres : batposResults) {
-							if (!batposOutput.empty()) {
-								batposOutput += ",";
-							}
-							batposOutput += bpres["batpos"] + " (" + bpres["hits"] + ")";
+					std::string batposOutput = "";
+					for (std::map<std::string, std::string> bpres : batposResults) {
+						if (!batposOutput.empty()) {
+							batposOutput += ",";
 						}
-
-						std::cout << batposOutput << std::endl;
-
-						ofs << puDres["gamedate"] << "," << pitcher << "," << umpire << "," << pitcherThrows << ",\"" << batposOutput << "\"" << std::endl;
-
-						ofs << std::endl;
+						batposOutput += bpres["batpos"] + " (" + bpres["hits"] + ")";
 					}
+
+					std::cout << batposOutput << std::endl;
 				}
 			}
 		}
 
-		query = "select name,id from players where position != 'P' and (team='" + opponent +"' or team like '%" + opponent + "');";
-		res = DBWrapper::queryDatabase(db, query);
+		teamType tType = (side % 2 == 0 ? teamType::AWAY : teamType::HOME);
 
-		for (std::map<std::string, std::string> row : res)
-		{
-			int hitterId = 0;
-			try
-			{
-				hitterId = std::stoi(row["id"]);
-			}
-			catch (std::invalid_argument &iae)
-			{
-				std::cout << "Error: " << iae.what() << std::endl;
-				hitterId = std::numeric_limits<int>::min();
-			}
+		for (int n = 1; n <= 9; ++n) {
+			std::map<char, int> numHands;
+			for (char hand : handArr) {
+				query = "select p.gamedate,p.inningtype,p.inningnum,p.batpos,h.hits,p.event from PBP p inner join players h on h.id=p.hitterid where p.pitcherid="+std::to_string(pitcherId)+" and p.batpos="+std::to_string(n)+" and p.inningtype='"+(tType == teamType::AWAY ? "t" : "b")+"' and h.hits='"+hand+"' and p.isHitterStarter=1 order by p.gamedate,p.batpos;";
+				res = DBWrapper::queryDatabase(db, query);
+				std::map<std::string, int> dates;
+				std::map<std::string, int> numHits;
 
-			if (hitterId == std::numeric_limits<int>::min())
-			{
-				continue;
-			}
-
-			std::string hpDateQuery = "select distinct gamedate,awayteam from PBP where hitterid="+std::to_string(hitterId)+" and pitcherId="+std::to_string(pitcherId)+" and isHitterStarter=1 and isPitcherStarter=1 and event >= 0 order by gamedate desc limit 1;";
-			std::vector<std::map<std::string, std::string>> hpDateResults = DBWrapper::queryDatabase(db, hpDateQuery);
-
-			if (hpDateResults.empty() && puDateResults.empty()) {
-				continue;
-			}
-
-			bool showResults = false;
-			std::string hpdate = "";
-			std::vector<std::map<std::string, std::string>> hpHitResults;
-			if (!hpDateResults.empty()) {
-				hpdate = hpDateResults[0]["gamedate"];
-
-				if (!isDoubleHeader(db, hpdate, hpDateResults[0]["awayteam"])) {
-					std::string hpHitQuery = "select distinct inningtype,inningnum,batpos,gamenumber,event,gametime,isHitterStarter,isPitcherStarter from PBP where hitterid="+std::to_string(hitterId)+" and pitcherId="+std::to_string(pitcherId)+" and gamedate='"+hpdate+"' and isPitcherStarter=1 and isHitterStarter=1;";
-					hpHitResults = DBWrapper::queryDatabase(db, hpHitQuery);
-
-					showResults = std::any_of(hpHitResults.begin(), hpHitResults.end(), [](const std::map<std::string, std::string> &hpRes) {
-						try {
-							int evVal = std::stoi(hpRes.at("event"));
-							return (evVal > 0);
-						}
-						catch (...) {
-							return (false);
-						}
-					});
-
-					if (!showResults) {
-						std::cout << "hpShowResults = false, skipping " << row["name"] << std::endl;
-						skipfs << row["name"] << std::endl;
-						continue;
+				for (std::map<std::string, std::string> data : res) {
+					int val = std::numeric_limits<int>::min();
+					try {
+						val = std::stoi(data["event"]);
 					}
+					catch (...) {
+						val = std::numeric_limits<int>::min();
+					}
+
+					if (val >= 0) {
+						++dates[data["gamedate"]];
+						if (val > 0) {
+							++numHits[data["gamedate"]];
+						}
+					}
+				}
+
+				if (dates.size() > 0 && dates.size() == numHits.size()) {
+					++numHands[hand];
 				}
 				else {
-					if (puDateResults.empty()) {
-						continue;
-					}
+					numHands.erase(hand);
 				}
+
 			}
 
-			std::string huDateQuery = "select distinct gamedate,awayteam from PBP where hitterid="+std::to_string(hitterId)+" and umpire='"+umpire+"' and isHitterStarter=1 and event >= 0 order by gamedate desc limit 1;";
-			std::vector<std::map<std::string, std::string>> huDateResults = DBWrapper::queryDatabase(db, huDateQuery);
-
-			if (huDateResults.empty()) {
-				continue;
+			if (numHands.size() == handArr.size()) {
+				std::cout << n << std::endl;
 			}
-
-			std::string hudate = huDateResults[0]["gamedate"];
-
-			if (isDoubleHeader(db, hudate, huDateResults[0]["awayteam"])) {
-				continue;
-			}
-
-			std::string huHitQuery = "select distinct inningtype,inningnum,batpos,pitcherid,gamenumber,event,gametime,isHitterStarter,isPitcherStarter from PBP where hitterid="+std::to_string(hitterId)+" and umpire='"+umpire+"' and gamedate='"+hudate+"' and isHitterStarter=1 and isPitcherStarter=1;";
-			std::vector<std::map<std::string, std::string>> huHitResults = DBWrapper::queryDatabase(db, huHitQuery);
-
-			showResults = std::any_of(huHitResults.begin(), huHitResults.end(), [](const std::map<std::string, std::string> &huRes) {
-				try {
-					int evVal = std::stoi(huRes.at("event"));
-					return (evVal > 0);
-				}
-				catch (...) {
-					return (false);
-				}
-			});
-
-			if (!showResults) {
-				std::cout << "huShowResults = false, skipping " << row["name"] << std::endl;
-				skipfs << row["name"] << std::endl;
-				continue;
-			}
-
-			for (std::map<std::string, std::string> hpRow : hpHitResults) {
-				ofs << hpdate << "," << row["name"] << "," << pitcher << "," << pitcherThrows << "," << hpRow["gametime"] << "," << hpRow["gamenumber"] << "," << hpRow["isHitterStarter"] << "," << hpRow["isPitcherStarter"] << "," << hpRow["inningtype"] << "," << hpRow["inningnum"] << "," << hpRow["batpos"] << "," << hpRow["event"] << std::endl;
-			}
-
-			for (std::map<std::string, std::string> huRow : huHitResults) {
-				std::string throwQuery = "select distinct throws from players where id="+huRow["pitcherid"]+";";
-				std::vector<std::map<std::string, std::string>> throwResult = DBWrapper::queryDatabase(db, throwQuery);
-				ofs << hudate << "," << row["name"] << "," << umpire << "," << throwResult[0]["throws"] << "," << huRow["gametime"] << "," << huRow["gamenumber"] << "," << huRow["isHitterStarter"] << "," << huRow["isPitcherStarter"] << "," << huRow["inningtype"] << "," << huRow["inningnum"] << "," << huRow["batpos"] << "," << huRow["event"] << std::endl;
-			}
-
-			ofs << std::endl;
-
-			std::cout << row["name"] << std::endl;
 		}
 	}
 
 	sqlite3_close(db);
 
-	ofs.close();
-	if (std::filesystem::is_empty(outputFile)) {
-		std::filesystem::remove(outputFile.c_str());
-	}
-
-	skipfs.close();
-	if (std::filesystem::is_empty(skipFile)) {
-		std::filesystem::remove(skipFile.c_str());
-	}
 	return (0);
 }
