@@ -161,8 +161,17 @@ int main() {
 
 			}
 
-			if (numHands.size() == handArr.size()) {
-				std::cout << n << std::endl;
+			if (!numHands.empty()) {
+				std::string bpOutput = "";
+				for (std::pair<char, int> pr : numHands) {
+					if (!bpOutput.empty()) {
+						bpOutput += ",";
+					}
+
+					bpOutput += pr.first;
+				}
+
+				std::cout << n << ": " << bpOutput << std::endl;
 			}
 		}
 	}
