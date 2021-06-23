@@ -104,19 +104,17 @@ int main() {
 				std::string batposQuery = "select distinct p.batpos,h.hits from PBP p inner join players h on p.hitterid=h.id where p.pitcherid="+std::to_string(pitcherId)+" and p.gamedate='"+puDres["gamedate"]+"' and p.isHitterStarter=1 and p.event > 0 order by p.batpos;";
 				std::vector<std::map<std::string, std::string>> batposResults = DBWrapper::queryDatabase(db, batposQuery);
 
-				if (!batposResults.empty()) {
-					std::cout << puDres["gamedate"] << " - ";
+				std::cout << puDres["gamedate"] << " - ";
 
-					std::string batposOutput = "";
-					for (std::map<std::string, std::string> bpres : batposResults) {
-						if (!batposOutput.empty()) {
-							batposOutput += ",";
-						}
-						batposOutput += bpres["batpos"] + " (" + bpres["hits"] + ")";
+				std::string batposOutput = "";
+				for (std::map<std::string, std::string> bpres : batposResults) {
+					if (!batposOutput.empty()) {
+						batposOutput += ",";
 					}
-
-					std::cout << batposOutput << std::endl;
+					batposOutput += bpres["batpos"] + " (" + bpres["hits"] + ")";
 				}
+
+				std::cout << batposOutput << std::endl;
 			}
 		}
 		else {
@@ -129,7 +127,7 @@ int main() {
 		for (int n = 1; n <= 9; ++n) {
 			std::unordered_map<char, int> numHands;
 			for (char hand : handArr) {
-				query = "select p.gamedate,p.inningtype,p.inningnum,p.batpos,h.hits,p.event from PBP p inner join players h on h.id=p.hitterid where p.pitcherid="+std::to_string(pitcherId)+" and p.batpos="+std::to_string(n)+" and p.inningtype='"+(tType == teamType::AWAY ? "t" : "b")+"' and h.hits='"+hand+"' and p.isHitterStarter=1 order by p.gamedate,p.batpos;";
+				query = "select p.gamedate,p.inningtype,p.inningnum,p.batpos,h.hits,p.event from PBP p inner join players h on h.id=p.hitterid where p.pitcherid="+std::to_string(pitcherId)+" and p.batpos="+std::to_string(n)+" and p.inningtype='"+(tType == teamType::AWAY ? "t" : "b")+"' and h.hits='"+hand+"' and p.isHitterStarter=1 and p.isPitcherStarter=1 order by p.gamedate,p.batpos;";
 				res = DBWrapper::queryDatabase(db, query);
 				std::map<std::string, int> dates;
 				std::map<std::string, int> numHits;
