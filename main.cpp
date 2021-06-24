@@ -80,6 +80,10 @@ int main() {
 		std::string pitcher = gameParts[0];
 		std::string opponent = gameParts[1];
 		std::string umpire = gameParts[2];
+		std::size_t pos = umpire.find("'");
+		if (pos != std::string::npos) {
+			umpire.insert(pos, "'");
+		}
 		std::string ballpark = gameParts[3];
 		std::string gametime = gameParts[4];
 
