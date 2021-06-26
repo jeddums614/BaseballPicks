@@ -36,7 +36,6 @@ std::ostream& operator<< (std::ostream& os, const teamType& t) {
 }
 
 int main() {
-    const std::array<char, 3> handArr = {'R','L','S'};
 	sqlite3* db;
 
 	auto todaydate = std::chrono::system_clock::now();
@@ -62,8 +61,6 @@ int main() {
 		return (1);
 	}
 
-	int side = 0;
-
 	std::ifstream ifs("todaymatchups.txt");
 	std::string line = "";
 
@@ -73,7 +70,6 @@ int main() {
 
 		if (gameParts.size() != 5) {
 			std::cout << "Not all info filled out in todaymatchups.txt for this line" << std::endl;
-			++side;
 			continue;
 		}
 
@@ -95,7 +91,6 @@ int main() {
 				res = DBWrapper::queryDatabase(db, query);
 			}
 			else {
-				++side;
 				continue;
 			}
 		}
@@ -114,7 +109,6 @@ int main() {
 
 		if (pitcherId == std::numeric_limits<int>::min())
 		{
-			++side;
 			continue;
 		}
 
@@ -139,72 +133,6 @@ int main() {
 				std::cout << batposOutput << std::endl;
 			}
 		}
-
-		teamType tType = (side % 2 == 0 ? teamType::AWAY : teamType::HOME);
-		std::cout << "tType = " << tType << std::endl;
-
-		constexpr int firstpos = 1;
-		constexpr int lastpos = 9;
-		for (int n = firstpos; n <= lastpos; ++n) {
-			std::unordered_map<char, int> numHands;
-			for (char hand : handArr) {
-				query = "select p.gamedate,p.inningtype,p.inningnum,p.batpos,h.hits,p.event from PBP p inner join players h on h.id=p.hitterid where p.pitcherid="+std::to_string(pitcherId)+" and p.batpos="+std::to_string(n)+" and p.inningtype='"+(tType == teamType::AWAY ? "t" : "b")+"' and h.hits='"+hand+"' and p.isHitterStarter=1 and p.isPitcherStarter=1 order by p.gamedate,p.batpos;";
-				res = DBWrapper::queryDatabase(db, query);
-				std::map<std::string, int> dates;
-				std::map<std::string, int> numHits;
-
-				for (std::map<std::string, std::string> data : res) {
-					int val = std::numeric_limits<int>::min();
-					try {
-						val = std::stoi(data["event"]);
-					}
-					catch (...) {
-						val = std::numeric_limits<int>::min();
-					}
-
-					if (val >= 0) {
-						++dates[data["gamedate"]];
-						if (val > 0) {
-							++numHits[data["gamedate"]];
-						}
-					}
-				}
-
-				if (dates.size() > 0 && dates.size() == numHits.size()) {
-					++numHands[hand];
-				}
-				else if (dates.size() == 0) {
-					numHands[hand] = 0;
-				}
-				else {
-					numHands.erase(hand);
-				}
-
-			}
-
-			if (numHands.size() == handArr.size()) {
-				std::string bpOutput = "";
-				std::size_t numUnknowns = 0;
-				for (std::pair<char, int> pr : numHands) {
-					if (!bpOutput.empty()) {
-						bpOutput += ",";
-					}
-
-					bpOutput += pr.first;
-
-					if (pr.second == 0) {
-						++numUnknowns;
-						bpOutput += " (U)";
-					}
-				}
-
-				if (numUnknowns < handArr.size()) {
-				    std::cout << n << ": " << bpOutput << std::endl;
-				}
-			}
-		}
-
-		++side;
 	}
 
 	sqlite3_close(db);
