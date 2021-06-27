@@ -133,6 +133,50 @@ int main() {
 				std::cout << batposOutput << std::endl;
 			}
 		}
+		else {
+			continue;
+		}
+
+		query = "select distinct id,name from players where team like '%"+opponent+"' and position != 'P';";
+		std::vector<std::map<std::string, std::string>> playerList = DBWrapper::queryDatabase(db, query);
+
+		for (std::map<std::string, std::string> hitter : playerList) {
+			int hitterid = std::numeric_limits<int>::min();
+			try {
+				hitterid = std::stoi(hitter["id"]);
+			}
+			catch (...) {
+				hitterid = std::numeric_limits<int>::min();
+			}
+
+			if (hitterid > 0) {
+				query = "select distinct gamedate from PBP where hitterid="+hitter["id"]+" and umpire='"+umpire+"' order by gamedate desc limit 1";
+				std::vector<std::map<std::string, std::string>> huDateRes = DBWrapper::queryDatabase(db, query);
+
+				if (!huDateRes.empty()) {
+					std::string huDate = huDateRes[0]["gamedate"];
+
+					query = "select inningtype, inningnum from PBP p inner join players pitch on pitch.id=p.pitcherid where p.gamedate='"+huDate+"' and p.hitterid="+hitter["id"]+" and p.isHitterStarter=1 and p.isPitcherStarter=1 and pitch.throws='"+pitcherThrows+"';";
+					std::vector<std::map<std::string, std::string>> huHitRes = DBWrapper::queryDatabase(db, query);
+
+					if (!huHitRes.empty()) {
+
+						query = "select distinct gamedate from PBP where hitterid="+hitter["id"] + " and pitcherid="+std::to_string(pitcherId)+" order by gamedate desc limit 1;";
+						std::vector<std::map<std::string, std::string>> hpDateRes = DBWrapper::queryDatabase(db, query);
+
+						if (!hpDateRes.empty()) {
+							std::string hpDate = hpDateRes[0]["gamedate"];
+							query = "select distinct gamedate from PBP where hitterid="+hitter["id"] + " and pitcherid="+std::to_string(pitcherId)+" and gamedate='"+hpDate+"';";
+							std::vector<std::map<std::string, std::string>> hpHitRes = DBWrapper::queryDatabase(db, query);
+
+							if (!hpHitRes.empty()) {
+								std::cout << hitter["name"] << std::endl;
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	sqlite3_close(db);
