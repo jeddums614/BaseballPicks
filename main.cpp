@@ -63,6 +63,7 @@ int main() {
 
 	std::ifstream ifs("todaymatchups.txt");
 	std::string line = "";
+	int side = 0;
 
 	while (std::getline(ifs, line)) {
 		std::cout << line << std::endl;
@@ -70,6 +71,7 @@ int main() {
 
 		if (gameParts.size() != 5) {
 			std::cout << "Not all info filled out in todaymatchups.txt for this line" << std::endl;
+			++side;
 			continue;
 		}
 
@@ -91,6 +93,7 @@ int main() {
 				res = DBWrapper::queryDatabase(db, query);
 			}
 			else {
+				++side;
 				continue;
 			}
 		}
@@ -109,6 +112,7 @@ int main() {
 
 		if (pitcherId == std::numeric_limits<int>::min())
 		{
+			++side;
 			continue;
 		}
 
@@ -134,6 +138,7 @@ int main() {
 			}
 		}
 		else {
+			++side;
 			continue;
 		}
 
@@ -150,33 +155,41 @@ int main() {
 			}
 
 			if (hitterid > 0) {
-				query = "select distinct gamedate from PBP where hitterid="+hitter["id"]+" and umpire='"+umpire+"' order by gamedate desc limit 1";
+				query = "select distinct gamedate from PBP where hitterid="+hitter["id"]+" and umpire='"+umpire+"' and event >= 0 and inningnum <= 7 order by gamedate desc limit 1";
 				std::vector<std::map<std::string, std::string>> huDateRes = DBWrapper::queryDatabase(db, query);
 
 				if (!huDateRes.empty()) {
 					std::string huDate = huDateRes[0]["gamedate"];
 
-					query = "select inningtype, inningnum from PBP p inner join players pitch on pitch.id=p.pitcherid where p.gamedate='"+huDate+"' and p.hitterid="+hitter["id"]+" and p.isHitterStarter=1 and p.isPitcherStarter=1 and pitch.throws='"+pitcherThrows+"';";
+					query = "select inningtype,inningnum from PBP p inner join players pitch on pitch.id=p.pitcherid where p.gamedate='"+huDate+"' and p.hitterid="+hitter["id"]+" and p.isHitterStarter=1 and p.isPitcherStarter=1 and pitch.throws='"+pitcherThrows+"' and p.inningnum <= 7 and p.event > 0;";
 					std::vector<std::map<std::string, std::string>> huHitRes = DBWrapper::queryDatabase(db, query);
 
 					if (!huHitRes.empty()) {
 
-						query = "select distinct gamedate from PBP where hitterid="+hitter["id"] + " and pitcherid="+std::to_string(pitcherId)+" order by gamedate desc limit 1;";
+						query = "select distinct gamedate from PBP where hitterid="+hitter["id"] + " and pitcherid="+std::to_string(pitcherId)+" and event >= 0 and isHitterStarter=1 and isPitcherStarter=1 order by gamedate desc limit 1;";
 						std::vector<std::map<std::string, std::string>> hpDateRes = DBWrapper::queryDatabase(db, query);
 
 						if (!hpDateRes.empty()) {
 							std::string hpDate = hpDateRes[0]["gamedate"];
-							query = "select distinct gamedate from PBP where hitterid="+hitter["id"] + " and pitcherid="+std::to_string(pitcherId)+" and gamedate='"+hpDate+"';";
+							query = "select distinct inningtype,inningnum from PBP where hitterid="+hitter["id"] + " and pitcherid="+std::to_string(pitcherId)+" and gamedate='"+hpDate+"' and event > 0 and inningnum <= 7;";
 							std::vector<std::map<std::string, std::string>> hpHitRes = DBWrapper::queryDatabase(db, query);
 
 							if (!hpHitRes.empty()) {
-								std::cout << hitter["name"] << std::endl;
+								std::cout << hitter["name"] << " (3)" << std::endl;
 							}
+							else {
+								std::cout << hitter["name"] << " (2)" << std::endl;
+							}
+						}
+						else {
+							std::cout << hitter["name"] << " (2)" << std::endl;
 						}
 					}
 				}
 			}
 		}
+
+		++side;
 	}
 
 	sqlite3_close(db);
