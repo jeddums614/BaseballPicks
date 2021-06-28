@@ -63,7 +63,6 @@ int main() {
 
 	std::ifstream ifs("todaymatchups.txt");
 	std::string line = "";
-	int side = 0;
 
 	while (std::getline(ifs, line)) {
 		std::cout << line << std::endl;
@@ -71,7 +70,6 @@ int main() {
 
 		if (gameParts.size() != 5) {
 			std::cout << "Not all info filled out in todaymatchups.txt for this line" << std::endl;
-			++side;
 			continue;
 		}
 
@@ -93,7 +91,6 @@ int main() {
 				res = DBWrapper::queryDatabase(db, query);
 			}
 			else {
-				++side;
 				continue;
 			}
 		}
@@ -112,14 +109,16 @@ int main() {
 
 		if (pitcherId == std::numeric_limits<int>::min())
 		{
-			++side;
 			continue;
 		}
+
+		std::string matchStr = "";
 
 		std::string puDateQuery = "select distinct gamedate,inningtype from PBP where pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1 and event >= 0 and inningnum <= 7 order by gamedate desc;";
 		std::vector<std::map<std::string, std::string>> puDateResults = DBWrapper::queryDatabase(db, puDateQuery);
 
 		if (!puDateResults.empty()) {
+			matchStr += "pu";
 			for (std::map<std::string, std::string> puDres : puDateResults) {
 				std::string batposQuery = "select distinct p.batpos,h.hits from PBP p inner join players h on p.hitterid=h.id where p.pitcherid="+std::to_string(pitcherId)+" and p.gamedate='"+puDres["gamedate"]+"' and p.isHitterStarter=1 and p.event > 0 and p.inningnum <= 7 order by p.batpos;";
 				std::vector<std::map<std::string, std::string>> batposResults = DBWrapper::queryDatabase(db, batposQuery);
@@ -137,15 +136,14 @@ int main() {
 				std::cout << batposOutput << std::endl;
 			}
 		}
-		else {
-			++side;
-			continue;
-		}
 
 		query = "select distinct id,name from players where team like '%"+opponent+"' and position != 'P';";
 		std::vector<std::map<std::string, std::string>> playerList = DBWrapper::queryDatabase(db, query);
 
+		std::string saveVal = matchStr;
+
 		for (std::map<std::string, std::string> hitter : playerList) {
+			matchStr = saveVal;
 			int hitterid = std::numeric_limits<int>::min();
 			try {
 				hitterid = std::stoi(hitter["id"]);
@@ -165,31 +163,34 @@ int main() {
 					std::vector<std::map<std::string, std::string>> huHitRes = DBWrapper::queryDatabase(db, query);
 
 					if (!huHitRes.empty()) {
-
-						query = "select distinct gamedate from PBP where hitterid="+hitter["id"] + " and pitcherid="+std::to_string(pitcherId)+" and event >= 0 and isHitterStarter=1 and isPitcherStarter=1 order by gamedate desc limit 1;";
-						std::vector<std::map<std::string, std::string>> hpDateRes = DBWrapper::queryDatabase(db, query);
-
-						if (!hpDateRes.empty()) {
-							std::string hpDate = hpDateRes[0]["gamedate"];
-							query = "select distinct inningtype,inningnum from PBP where hitterid="+hitter["id"] + " and pitcherid="+std::to_string(pitcherId)+" and gamedate='"+hpDate+"' and event > 0 and inningnum <= 7;";
-							std::vector<std::map<std::string, std::string>> hpHitRes = DBWrapper::queryDatabase(db, query);
-
-							if (!hpHitRes.empty()) {
-								std::cout << hitter["name"] << " (3)" << std::endl;
-							}
-							else {
-								std::cout << hitter["name"] << " (2)" << std::endl;
-							}
+						if (!matchStr.empty()) {
+							matchStr += ",";
 						}
-						else {
-							std::cout << hitter["name"] << " (2)" << std::endl;
-						}
+						matchStr += "hu";
 					}
+				}
+
+				query = "select distinct gamedate from PBP where hitterid="+hitter["id"] + " and pitcherid="+std::to_string(pitcherId)+" and event >= 0 and isHitterStarter=1 and isPitcherStarter=1 order by gamedate desc limit 1;";
+				std::vector<std::map<std::string, std::string>> hpDateRes = DBWrapper::queryDatabase(db, query);
+
+				if (!hpDateRes.empty()) {
+					std::string hpDate = hpDateRes[0]["gamedate"];
+					query = "select distinct inningtype,inningnum from PBP where hitterid="+hitter["id"] + " and pitcherid="+std::to_string(pitcherId)+" and gamedate='"+hpDate+"' and event > 0 and inningnum <= 7;";
+					std::vector<std::map<std::string, std::string>> hpHitRes = DBWrapper::queryDatabase(db, query);
+
+					if (!hpHitRes.empty()) {
+						if (!matchStr.empty()) {
+							matchStr += ",";
+						}
+						matchStr += "hp";
+					}
+				}
+
+				if (matchStr.size() > 2) {
+					std::cout << hitter["name"] << " (" << matchStr << ")" << std::endl;
 				}
 			}
 		}
-
-		++side;
 	}
 
 	sqlite3_close(db);
