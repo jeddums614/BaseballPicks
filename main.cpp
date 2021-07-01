@@ -35,6 +35,76 @@ std::ostream& operator<< (std::ostream& os, const teamType& t) {
 	return (os);
 }
 
+std::pair<std::pair<double, std::string>, std::pair<double, std::string>> printBabipStats(sqlite3* db, int hitterId, double targetBabip) {
+	std::pair<std::pair<double, std::string>, std::pair<double, std::string>> retVal;
+
+	std::string firstDateQuery = "select distinct gamedate from PBP where hitterid="+std::to_string(hitterId)+" limit 1;";
+	std::vector<std::map<std::string, std::string>> firstDateRes = DBWrapper::queryDatabase(db, firstDateQuery);
+	std::string firstDate = "";
+	if (!firstDateRes.empty()) {
+		firstDate = firstDateRes[0]["gamedate"];
+	}
+	else {
+		firstDate = "2021-04-01";
+	}
+	std::string query = "select distinct gamedate from PBP where hitterid="+std::to_string(hitterId)+" and gamedate > '"+firstDate+"'";
+	std::vector<std::map<std::string, std::string>> dateColl = DBWrapper::queryDatabase(db, query);
+
+	for (std::map<std::string, std::string> datemap : dateColl) {
+		std::string numHitQuery = "select count(*) from PBP where gamedate < '"+datemap["gamedate"] + "' and gamedate >= (select date('"+datemap["gamedate"]+"', '-7 day')) and hitterid="+std::to_string(hitterId)+" and event > 0";
+		std::vector<std::map<std::string, std::string>> tmp = DBWrapper::queryDatabase(db, numHitQuery);
+		int numHits = std::stoi(tmp[0]["count(*)"]);
+		std::string numHrQuery = "select count(*) from PBP where gamedate < '"+datemap["gamedate"] + "' and gamedate >= (select date('"+datemap["gamedate"]+"', '-7 day')) and hitterid="+std::to_string(hitterId)+" and event=4;";
+		tmp = DBWrapper::queryDatabase(db, numHrQuery);
+		int numHr = std::stoi(tmp[0]["count(*)"]);
+		std::string numSfQuery = "select count(*) from PBP where gamedate < '"+datemap["gamedate"] + "' and gamedate >= (select date('"+datemap["gamedate"]+"', '-7 day')) and hitterid="+std::to_string(hitterId)+" and event=-2;";
+		tmp = DBWrapper::queryDatabase(db, numSfQuery);
+		int numSf = std::stoi(tmp[0]["count(*)"]);
+		std::string numStrikeoutQuery = "select count(*) from PBP where gamedate < '"+datemap["gamedate"] + "' and gamedate >= (select date('"+datemap["gamedate"]+"', '-7 day')) and hitterid="+std::to_string(hitterId)+" and count like '%-3';";
+		tmp = DBWrapper::queryDatabase(db, numStrikeoutQuery);
+		int numStrikeouts = std::stoi(tmp[0]["count(*)"]);
+		std::string numAtBatQuery = "select count(*) from PBP where gamedate < '"+datemap["gamedate"] + "' and gamedate >= (select date('"+datemap["gamedate"]+"', '-7 day')) and hitterid="+std::to_string(hitterId)+" and event >= 0;";
+		tmp = DBWrapper::queryDatabase(db, numAtBatQuery);
+		int numAtBats = std::stoi(tmp[0]["count(*)"]);
+
+		double denominator = numAtBats - numHr - numStrikeouts + numSf;
+		double babip = 0;
+		if (denominator > 0) {
+			babip = (numHits-numHr)/denominator;
+		}
+
+		std::string hitQuery = "select count(*) from PBP where gamedate = '"+datemap["gamedate"] + "' and hitterid="+std::to_string(hitterId)+" and event > 0;";
+		std::vector<std::map<std::string, std::string>> dayHitRes = DBWrapper::queryDatabase(db, hitQuery);
+		std::string hitResult = "";
+
+		if (dayHitRes[0]["count(*)"][0] != '0') {
+			hitResult = "Y";
+		}
+		else {
+			hitResult = "N";
+		}
+
+		if (babip > targetBabip) {
+			if (retVal.first.second.empty()) {
+				retVal.first = std::make_pair(babip,hitResult);
+			}
+			else if (babip < retVal.first.first) {
+			    retVal.first = std::make_pair(babip,hitResult);
+			}
+		}
+		else if (babip < targetBabip) {
+			if (retVal.second.second.empty()) {
+				retVal.second = std::make_pair(babip,hitResult);
+			}
+			else if (babip > retVal.second.first) {
+				retVal.second = std::make_pair(babip,hitResult);
+			}
+		}
+	}
+
+	return retVal;
+}
+
 int main() {
 	sqlite3* db;
 
@@ -192,8 +262,38 @@ int main() {
 					}
 				}
 
-				if ((!matchStr.empty() && matchStr.find("pu") == std::string::npos) || matchStr.find(",") != std::string::npos) {
-					std::cout << hitter["name"] << " (" << matchStr << ")" << std::endl;
+				std::string numHitQuery = "select count(*) from PBP where gamedate < '"+datestr + "' and gamedate >= (select date('"+datestr+"', '-7 day')) and hitterid="+std::to_string(hitterid)+" and event > 0";
+				std::vector<std::map<std::string, std::string>> tmp = DBWrapper::queryDatabase(db, numHitQuery);
+				int numHits = std::stoi(tmp[0]["count(*)"]);
+				std::string numHrQuery = "select count(*) from PBP where gamedate < '"+datestr + "' and gamedate >= (select date('"+datestr+"', '-7 day')) and hitterid="+std::to_string(hitterid)+" and event=4;";
+				tmp = DBWrapper::queryDatabase(db, numHrQuery);
+				int numHr = std::stoi(tmp[0]["count(*)"]);
+				std::string numSfQuery = "select count(*) from PBP where gamedate < '"+datestr + "' and gamedate >= (select date('"+datestr+"', '-7 day')) and hitterid="+std::to_string(hitterid)+" and event=-2;";
+				tmp = DBWrapper::queryDatabase(db, numSfQuery);
+				int numSf = std::stoi(tmp[0]["count(*)"]);
+				std::string numStrikeoutQuery = "select count(*) from PBP where gamedate < '"+datestr + "' and gamedate >= (select date('"+datestr+"', '-7 day')) and hitterid="+std::to_string(hitterid)+" and count like '%-3';";
+				tmp = DBWrapper::queryDatabase(db, numStrikeoutQuery);
+				int numStrikeouts = std::stoi(tmp[0]["count(*)"]);
+				std::string numAtBatQuery = "select count(*) from PBP where gamedate < '"+datestr + "' and gamedate >= (select date('"+datestr+"', '-7 day')) and hitterid="+std::to_string(hitterid)+" and event >= 0;";
+				tmp = DBWrapper::queryDatabase(db, numAtBatQuery);
+				int numAtBats = std::stoi(tmp[0]["count(*)"]);
+
+				double todaydenominator = numAtBats - numHr - numStrikeouts + numSf;
+				double todaybabip = 0;
+				if (todaydenominator > 0) {
+					todaybabip = (numHits-numHr)/todaydenominator;
+				}
+
+			    std::pair<std::pair<double, std::string>, std::pair<double, std::string>> bounds = printBabipStats(db,hitterid,todaybabip);
+
+			    if (!bounds.first.second.empty() && bounds.first.second.compare(bounds.second.second) == 0 && bounds.first.second[0] == 'Y') {
+			    	std::cout << hitter["name"];
+				    if (!matchStr.empty()) {
+					    std::cout << " (" << matchStr << ")";
+				    }
+
+				    std::cout << " - " << bounds.first.second << "," <<bounds.second.second << std::endl;
+				    //std::cout << (std::round( bounds.first.first * 1000.0 ) / 1000.0) << "," << (std::round(todaybabip * 1000.0) / 1000.0) << "," << (std::round( bounds.second.first * 1000.0 ) / 1000.0) << std::endl;
 				}
 			}
 		}
