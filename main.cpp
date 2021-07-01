@@ -51,19 +51,19 @@ std::pair<std::pair<double, std::string>, std::pair<double, std::string>> printB
 	std::vector<std::map<std::string, std::string>> dateColl = DBWrapper::queryDatabase(db, query);
 
 	for (std::map<std::string, std::string> datemap : dateColl) {
-		std::string numHitQuery = "select count(*) from PBP where gamedate < '"+datemap["gamedate"] + "' and gamedate >= (select date('"+datemap["gamedate"]+"', '-7 day')) and hitterid="+std::to_string(hitterId)+" and event > 0";
+		std::string numHitQuery = "select count(*) from PBP where gamedate < '"+datemap["gamedate"] + "' and gamedate >= (select date('"+datemap["gamedate"]+"', '-7 day')) and hitterid="+std::to_string(hitterId)+" and isPitcherStarter=1 and isHitterStarter=1 and event > 0";
 		std::vector<std::map<std::string, std::string>> tmp = DBWrapper::queryDatabase(db, numHitQuery);
 		int numHits = std::stoi(tmp[0]["count(*)"]);
-		std::string numHrQuery = "select count(*) from PBP where gamedate < '"+datemap["gamedate"] + "' and gamedate >= (select date('"+datemap["gamedate"]+"', '-7 day')) and hitterid="+std::to_string(hitterId)+" and event=4;";
+		std::string numHrQuery = "select count(*) from PBP where gamedate < '"+datemap["gamedate"] + "' and gamedate >= (select date('"+datemap["gamedate"]+"', '-7 day')) and hitterid="+std::to_string(hitterId)+" and isPitcherStarter=1 and isHitterStarter=1 and event=4;";
 		tmp = DBWrapper::queryDatabase(db, numHrQuery);
 		int numHr = std::stoi(tmp[0]["count(*)"]);
-		std::string numSfQuery = "select count(*) from PBP where gamedate < '"+datemap["gamedate"] + "' and gamedate >= (select date('"+datemap["gamedate"]+"', '-7 day')) and hitterid="+std::to_string(hitterId)+" and event=-2;";
+		std::string numSfQuery = "select count(*) from PBP where gamedate < '"+datemap["gamedate"] + "' and gamedate >= (select date('"+datemap["gamedate"]+"', '-7 day')) and hitterid="+std::to_string(hitterId)+" and isPitcherStarter=1 and isHitterStarter=1 and event=-2;";
 		tmp = DBWrapper::queryDatabase(db, numSfQuery);
 		int numSf = std::stoi(tmp[0]["count(*)"]);
-		std::string numStrikeoutQuery = "select count(*) from PBP where gamedate < '"+datemap["gamedate"] + "' and gamedate >= (select date('"+datemap["gamedate"]+"', '-7 day')) and hitterid="+std::to_string(hitterId)+" and count like '%-3';";
+		std::string numStrikeoutQuery = "select count(*) from PBP where gamedate < '"+datemap["gamedate"] + "' and gamedate >= (select date('"+datemap["gamedate"]+"', '-7 day')) and hitterid="+std::to_string(hitterId)+" and isPitcherStarter=1 and isHitterStarter=1 and count like '%-3';";
 		tmp = DBWrapper::queryDatabase(db, numStrikeoutQuery);
 		int numStrikeouts = std::stoi(tmp[0]["count(*)"]);
-		std::string numAtBatQuery = "select count(*) from PBP where gamedate < '"+datemap["gamedate"] + "' and gamedate >= (select date('"+datemap["gamedate"]+"', '-7 day')) and hitterid="+std::to_string(hitterId)+" and event >= 0;";
+		std::string numAtBatQuery = "select count(*) from PBP where gamedate < '"+datemap["gamedate"] + "' and gamedate >= (select date('"+datemap["gamedate"]+"', '-7 day')) and hitterid="+std::to_string(hitterId)+" and isPitcherStarter=1 and isHitterStarter=1 and event >= 0;";
 		tmp = DBWrapper::queryDatabase(db, numAtBatQuery);
 		int numAtBats = std::stoi(tmp[0]["count(*)"]);
 
@@ -73,7 +73,7 @@ std::pair<std::pair<double, std::string>, std::pair<double, std::string>> printB
 			babip = (numHits-numHr)/denominator;
 		}
 
-		std::string hitQuery = "select count(*) from PBP where gamedate = '"+datemap["gamedate"] + "' and hitterid="+std::to_string(hitterId)+" and event > 0;";
+		std::string hitQuery = "select count(*) from PBP where gamedate = '"+datemap["gamedate"] + "' and hitterid="+std::to_string(hitterId)+" and isPitcherStarter=1 and isHitterStarter=1 and event > 0;";
 		std::vector<std::map<std::string, std::string>> dayHitRes = DBWrapper::queryDatabase(db, hitQuery);
 		std::string hitResult = "";
 
@@ -262,19 +262,19 @@ int main() {
 					}
 				}
 
-				std::string numHitQuery = "select count(*) from PBP where gamedate < '"+datestr + "' and gamedate >= (select date('"+datestr+"', '-7 day')) and hitterid="+std::to_string(hitterid)+" and event > 0";
+				std::string numHitQuery = "select count(*) from PBP where gamedate < '"+datestr + "' and gamedate >= (select date('"+datestr+"', '-7 day')) and hitterid="+std::to_string(hitterid)+" and isPitcherStarter=1 and isHitterStarter=1 and event > 0";
 				std::vector<std::map<std::string, std::string>> tmp = DBWrapper::queryDatabase(db, numHitQuery);
 				int numHits = std::stoi(tmp[0]["count(*)"]);
-				std::string numHrQuery = "select count(*) from PBP where gamedate < '"+datestr + "' and gamedate >= (select date('"+datestr+"', '-7 day')) and hitterid="+std::to_string(hitterid)+" and event=4;";
+				std::string numHrQuery = "select count(*) from PBP where gamedate < '"+datestr + "' and gamedate >= (select date('"+datestr+"', '-7 day')) and hitterid="+std::to_string(hitterid)+" and isPitcherStarter=1 and isHitterStarter=1 and event=4;";
 				tmp = DBWrapper::queryDatabase(db, numHrQuery);
 				int numHr = std::stoi(tmp[0]["count(*)"]);
-				std::string numSfQuery = "select count(*) from PBP where gamedate < '"+datestr + "' and gamedate >= (select date('"+datestr+"', '-7 day')) and hitterid="+std::to_string(hitterid)+" and event=-2;";
+				std::string numSfQuery = "select count(*) from PBP where gamedate < '"+datestr + "' and gamedate >= (select date('"+datestr+"', '-7 day')) and hitterid="+std::to_string(hitterid)+" and isPitcherStarter=1 and isHitterStarter=1 and event=-2;";
 				tmp = DBWrapper::queryDatabase(db, numSfQuery);
 				int numSf = std::stoi(tmp[0]["count(*)"]);
-				std::string numStrikeoutQuery = "select count(*) from PBP where gamedate < '"+datestr + "' and gamedate >= (select date('"+datestr+"', '-7 day')) and hitterid="+std::to_string(hitterid)+" and count like '%-3';";
+				std::string numStrikeoutQuery = "select count(*) from PBP where gamedate < '"+datestr + "' and gamedate >= (select date('"+datestr+"', '-7 day')) and hitterid="+std::to_string(hitterid)+" and isPitcherStarter=1 and isHitterStarter=1 and count like '%-3';";
 				tmp = DBWrapper::queryDatabase(db, numStrikeoutQuery);
 				int numStrikeouts = std::stoi(tmp[0]["count(*)"]);
-				std::string numAtBatQuery = "select count(*) from PBP where gamedate < '"+datestr + "' and gamedate >= (select date('"+datestr+"', '-7 day')) and hitterid="+std::to_string(hitterid)+" and event >= 0;";
+				std::string numAtBatQuery = "select count(*) from PBP where gamedate < '"+datestr + "' and gamedate >= (select date('"+datestr+"', '-7 day')) and hitterid="+std::to_string(hitterid)+" and isPitcherStarter=1 and isHitterStarter=1 and event >= 0;";
 				tmp = DBWrapper::queryDatabase(db, numAtBatQuery);
 				int numAtBats = std::stoi(tmp[0]["count(*)"]);
 
@@ -286,7 +286,7 @@ int main() {
 
 			    std::pair<std::pair<double, std::string>, std::pair<double, std::string>> bounds = printBabipStats(db,hitterid,todaybabip);
 
-			    if (!bounds.first.second.empty() && bounds.first.second.compare(bounds.second.second) == 0 && bounds.first.second[0] == 'Y') {
+			    if (!bounds.first.second.empty() && bounds.first.second.compare(bounds.second.second) == 0 && bounds.first.second[0] == 'Y' && !matchStr.empty()) {
 			    	std::cout << hitter["name"];
 				    if (!matchStr.empty()) {
 					    std::cout << " (" << matchStr << ")";
