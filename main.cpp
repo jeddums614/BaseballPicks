@@ -164,50 +164,52 @@ int main() {
 			}
 
 			if (hitterid > 0) {
-				query = "select distinct gamedate from PBP where hitterid="+hitter["id"]+" and umpire='"+umpire+"' and event >= 0 and inningnum <= 7 and isHitterStarter=1 and isPitcherStarter=1 order by gamedate desc limit 1";
+				query = "select distinct gamedate,inningtype from PBP where hitterid="+hitter["id"]+" and umpire='"+umpire+"' and event >= 0 and inningnum <= 7 and isHitterStarter=1 and isPitcherStarter=1 order by gamedate desc limit 1";
 				std::vector<std::map<std::string, std::string>> huDateRes = DBWrapper::queryDatabase(db, query);
 
 				if (!huDateRes.empty()) {
 					std::string huDate = huDateRes[0]["gamedate"];
 
-					query = "select inningtype,batpos from PBP where hitterid="+hitter["id"]+" and gamedate='"+huDate+"' and event = -2;";
+					query = "select p.inningtype,p.batpos from PBP p inner join players pitch on pitch.id=p.pitcherid where p.hitterid="+hitter["id"]+" and p.gamedate='"+huDate+"' and p.event = -2 and p.isPitcherStarter=1 and p.isHitterStarter=1 and pitch.throws='"+pitcherThrows+"';";
 					std::vector<std::map<std::string, std::string>> sfRes = DBWrapper::queryDatabase(db, query);
 
 					hitterStats.sacflies += sfRes.size();
 
-					query = "select inningtype,batpos from PBP where hitterid="+hitter["id"]+" and gamedate='"+huDate+"' and event=4;";
+					query = "select p.inningtype,p.batpos from PBP p inner join players pitch on pitch.id=p.pitcherid where p.hitterid="+hitter["id"]+" and p.gamedate='"+huDate+"' and p.event=4 and p.isPitcherStarter=1 and p.isHitterStarter=1 and pitch.throws='"+pitcherThrows+"';";
 					std::vector<std::map<std::string, std::string>> hrRes = DBWrapper::queryDatabase(db, query);
 
 					hitterStats.homeruns += hrRes.size();
 
-					query = "select inningtype,batpos from PBP where hitterid="+hitter["id"]+" and gamedate='"+huDate+"' and event >= 0;";
+					query = "select p.inningtype,p.batpos from PBP p inner join players pitch on pitch.id=p.pitcherid where p.hitterid="+hitter["id"]+" and p.gamedate='"+huDate+"' and p.event >= 0 and p.isPitcherStarter=1 and p.isHitterStarter=1 and pitch.throws='"+pitcherThrows+"';";
 					std::vector<std::map<std::string, std::string>> abRes = DBWrapper::queryDatabase(db, query);
 
 					hitterStats.atbats += abRes.size();
 
-					query = "select inningtype,batpos from PBP where hitterid="+hitter["id"]+" and gamedate='"+huDate+"' and count like '%-3';";
+					query = "select p.inningtype,p.batpos from PBP p inner join players pitch on pitch.id=p.pitcherid where p.hitterid="+hitter["id"]+" and p.gamedate='"+huDate+"' and p.count like '%-3' and p.isPitcherStarter=1 and p.isHitterStarter=1 and pitch.throws='"+pitcherThrows+"';";
 					std::vector<std::map<std::string, std::string>> kRes = DBWrapper::queryDatabase(db, query);
 
 					hitterStats.strikeouts += kRes.size();
 
-					query = "select inningtype,batpos from PBP where hitterid="+hitter["id"]+" and gamedate='"+huDate+"' and event > 0;";
+					query = "select p.inningtype,p.batpos from PBP p inner join players pitch on pitch.id=p.pitcherid where p.hitterid="+hitter["id"]+" and p.gamedate='"+huDate+"' and p.event > 0 and p.isPitcherStarter=1 and p.isHitterStarter=1 and pitch.throws='"+pitcherThrows+"';";
 					std::vector<std::map<std::string, std::string>> huHitRes = DBWrapper::queryDatabase(db, query);
 
 					hitterStats.hits += huHitRes.size();
 
-					if (!huHitRes.empty()) {
-						if (!matchStr.empty()) {
-							matchStr += ",";
-						}
-						matchStr += "hu [" + huHitRes[0]["inningtype"] + "," + huHitRes[0]["batpos"]+"]";
+					if ((tmType == teamType::AWAY && huDateRes[0]["inningtype"][0] == 't')|| (tmType == teamType::HOME && huDateRes[0]["inningtype"][0] == 'b')) {
+					    if (!huHitRes.empty()) {
+						    if (!matchStr.empty()) {
+							    matchStr += ",";
+						    }
+						    matchStr += "hu [" + huHitRes[0]["inningtype"] + "," + huHitRes[0]["batpos"]+"]";
 
-					}
-					else {
-						continue;
+					    }
+					    else {
+						    continue;
+					    }
 					}
 				}
 
-				query = "select distinct gamedate from PBP where hitterid="+hitter["id"] + " and pitcherid="+std::to_string(pitcherId)+" and event >= 0 and isHitterStarter=1 and isPitcherStarter=1 order by gamedate desc limit 1;";
+				query = "select distinct gamedate,inningtype from PBP where hitterid="+hitter["id"] + " and pitcherid="+std::to_string(pitcherId)+" and event >= 0 and isHitterStarter=1 and isPitcherStarter=1 order by gamedate desc limit 1;";
 				std::vector<std::map<std::string, std::string>> hpDateRes = DBWrapper::queryDatabase(db, query);
 
 				if (!hpDateRes.empty()) {
@@ -237,15 +239,16 @@ int main() {
 					std::vector<std::map<std::string, std::string>> hpHitRes = DBWrapper::queryDatabase(db, query);
 
 					hitterStats.hits += hpHitRes.size();
-
-					if (!hpHitRes.empty()) {
-						if (!matchStr.empty()) {
-							matchStr += ",";
+					if ((tmType == teamType::AWAY && hpDateRes[0]["inningtype"][0] == 't')|| (tmType == teamType::HOME && hpDateRes[0]["inningtype"][0] == 'b')) {
+						if (!hpHitRes.empty()) {
+						    if (!matchStr.empty()) {
+							    matchStr += ",";
+							}
+							matchStr += "hp [" + hpHitRes[0]["inningtype"] + "," + hpHitRes[0]["batpos"] + "]";
 						}
-						matchStr += "hp [" + hpHitRes[0]["inningtype"] + "," + hpHitRes[0]["batpos"] + "]";
-					}
-					else {
-						continue;
+						else {
+						    continue;
+						}
 					}
 				}
 
