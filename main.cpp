@@ -38,7 +38,7 @@ std::ostream& operator<< (std::ostream& os, const teamType& t) {
 }
 
 int main() {
-	sqlite3* db;
+	sqlite3* db = NULL;
 
 	auto todaydate = std::chrono::system_clock::now();
 	std::time_t now_c = std::chrono::system_clock::to_time_t(todaydate);
@@ -55,11 +55,13 @@ int main() {
 	datestr += std::to_string(now_tm.tm_mday);
 	const std::string startdate = "2021-04-01";
 
-	sqlite3_open("baseball.db", &db);
+	const int dbflags = SQLITE_OPEN_READWRITE;
+	int rc = sqlite3_open_v2("baseball.db", &db, dbflags, NULL);
 
-	if (db == NULL)
+	if (rc != SQLITE_OK)
 	{
-	    std::cout << "Failed to open DB" << std::endl;
+	    std::cout << "Failed to open DB: " << sqlite3_errmsg(db) << std::endl;
+	    sqlite3_close_v2(db);
 		return (1);
 	}
 
@@ -196,15 +198,14 @@ int main() {
 					hitterStats.hits += huHitRes.size();
 
 					if ((tmType == teamType::AWAY && huDateRes[0]["inningtype"][0] == 't')|| (tmType == teamType::HOME && huDateRes[0]["inningtype"][0] == 'b')) {
-					    if (!huHitRes.empty()) {
+						if (!huHitRes.empty()) {
 						    if (!matchStr.empty()) {
 							    matchStr += ",";
 						    }
 						    matchStr += "hu [" + huHitRes[0]["inningtype"] + "," + huHitRes[0]["batpos"]+"]";
-
 					    }
 					    else {
-						    continue;
+					        continue;
 					    }
 					}
 				}
@@ -240,16 +241,16 @@ int main() {
 
 					hitterStats.hits += hpHitRes.size();
 					if ((tmType == teamType::AWAY && hpDateRes[0]["inningtype"][0] == 't')|| (tmType == teamType::HOME && hpDateRes[0]["inningtype"][0] == 'b')) {
-						if (!hpHitRes.empty()) {
+					    if (!hpHitRes.empty()) {
 						    if (!matchStr.empty()) {
 							    matchStr += ",";
 							}
 							matchStr += "hp [" + hpHitRes[0]["inningtype"] + "," + hpHitRes[0]["batpos"] + "]";
-						}
-						else {
-						    continue;
-						}
-					}
+					    }
+					    else {
+					        continue;
+					    }
+				    }
 				}
 
 				double todaydenominator = hitterStats.atbats - hitterStats.homeruns - hitterStats.strikeouts + hitterStats.sacflies;
@@ -257,7 +258,6 @@ int main() {
 				if (todaydenominator > 0) {
 					todaybabip = (hitterStats.hits - hitterStats.homeruns)/todaydenominator;
 				}
-
 
 			    if (!matchStr.empty() && todaybabip > 0) {
 			    	std::cout << hitter["name"] << " (" << matchStr << ") " << todaybabip << std::endl;
@@ -267,7 +267,7 @@ int main() {
 		++side;
 	}
 
-	sqlite3_close(db);
+	sqlite3_close_v2(db);
 
 	return (0);
 }
