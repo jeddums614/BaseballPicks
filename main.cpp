@@ -200,12 +200,13 @@ int main() {
 			lineups.push_back("pu: "+pUmpDate+" ("+innType+") "+inningOutput.str());
 		}
 
-		query = "select gamedate,awayteam,hometeam from PBP where umpire='"+umpire+"' and (awayteam='"+opponent+"' or hometeam='"+opponent+"') order by gamedate desc limit 1;";
+		query = "select p.gamedate,p.awayteam,p.hometeam,pi.throws from PBP p inner join players pi on pi.id=p.pitcherid where p.umpire='"+umpire+"' and (p.awayteam='"+opponent+"' or p.hometeam='"+opponent+"') and p.isPitcherStarter=1 order by p.gamedate desc limit 1;";
 		std::vector<std::map<std::string, std::string>> uOppDateQuery = DBWrapper::queryDatabase(db, query);
 
 		std::string uOppDate = !uOppDateQuery.empty() ? uOppDateQuery[0]["gamedate"] : "";
+		std::string pThrows = !uOppDateQuery.empty() ? uOppDateQuery[0]["throws"] : "";
 
-		if (!uOppDate.empty()) {
+		if (!uOppDate.empty() && (!pThrows.empty() && pThrows[0] == pitcherThrows[0])) {
 			std::string innType = uOppDateQuery[0]["awayteam"].compare(opponent) == 0 ? "t" : "b";
 
 			std::stringstream inningOutput;
@@ -239,7 +240,21 @@ int main() {
 		    lineups.push_back("hu: "+uOppDate+" ("+innType+") "+inningOutput.str());
 		}
 
-		if (lineups.size() < 2) {
+		bool anyMatch = std::any_of(lineups.begin(), lineups.end(), [&](const std::string & ln) {
+			switch (tmType) {
+			case teamType::AWAY:
+				return ln.find("(t)") != std::string::npos;
+				break;
+
+			case teamType::HOME:
+				return ln.find("(b)") != std::string::npos;
+				break;
+
+			default:
+				return false;
+			}
+		});
+		if ((lineups.size() < 2) || !anyMatch) {
 			++side;
 			continue;
 		}
