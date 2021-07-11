@@ -150,12 +150,24 @@ int main() {
 
 				query = "select count(*) from PBP where gamedate='"+pOppDate+"' and pitcherid="+std::to_string(pitcherId)+" and isHitterStarter=1 and batpos="+std::to_string(i)+" and event > 0 and inningtype='"+pOppDateQuery[0]["inningtype"]+"';";
 				std::vector<std::map<std::string, std::string>> posHitQuery = DBWrapper::queryDatabase(db, query);
-				int numHits = std::stoi(posHitQuery[0]["count(*)"]);
-				if (numHits > 0) {
-					inningOutput << i << " (" << sideQuery[0]["hits"] << ") - Y";
+				std::string lineupHits = sideQuery[0]["hits"];
+				if (lineupHits.compare("S") == 0) {
+					if (pitcherThrows.compare("R") == 0) {
+						lineupHits += "/L";
+					}
+					else {
+						lineupHits += "/R";
+					}
 				}
 				else {
-				    inningOutput << i << " (" << sideQuery[0]["hits"] << ") - N";
+					lineupHits += "/"+sideQuery[0]["hits"];
+				}
+				int numHits = std::stoi(posHitQuery[0]["count(*)"]);
+				if (numHits > 0) {
+					inningOutput << i << " (" << lineupHits << ") - Y";
+				}
+				else {
+				    inningOutput << i << " (" << lineupHits << ") - N";
 			    }
 			}
 
@@ -188,12 +200,24 @@ int main() {
 
 				query = "select count(*) from PBP where gamedate='"+pUmpDate+"' and umpire='"+umpire+"' and isHitterStarter=1 and batpos="+std::to_string(i)+" and event > 0 and inningtype='"+pUmpDateQuery[0]["inningtype"]+"' and inningnum <= 7 and isPitcherStarter=1;";
 				std::vector<std::map<std::string, std::string>> posHitQuery = DBWrapper::queryDatabase(db, query);
-				int numHits = std::stoi(posHitQuery[0]["count(*)"]);
-				if (numHits > 0) {
-				    inningOutput << i << " (" << sideQuery[0]["hits"] << ") - Y";
+				std::string lineupHits = sideQuery[0]["hits"];
+				if (lineupHits.compare("S") == 0) {
+					if (pitcherThrows.compare("R") == 0) {
+						lineupHits += "/L";
+					}
+					else {
+						lineupHits += "/R";
+					}
 				}
 				else {
-				    inningOutput << i << " (" << sideQuery[0]["hits"] << ") - N";
+					lineupHits += "/"+sideQuery[0]["hits"];
+				}
+				int numHits = std::stoi(posHitQuery[0]["count(*)"]);
+				if (numHits > 0) {
+				    inningOutput << i << " (" << lineupHits << ") - Y";
+				}
+				else {
+				    inningOutput << i << " (" << lineupHits << ") - N";
 				}
 			}
 
@@ -228,12 +252,24 @@ int main() {
 
 				query = "select count(*) from PBP where gamedate='"+uOppDate+"' and (awayteam='"+opponent+"' or hometeam='"+opponent+"') and isHitterStarter=1 and batpos="+std::to_string(i)+" and event > 0 and inningtype='"+innType+"';";
 				std::vector<std::map<std::string, std::string>> posHitQuery = DBWrapper::queryDatabase(db, query);
-				int numHits = std::stoi(posHitQuery[0]["count(*)"]);
-				if (numHits > 0) {
-				    inningOutput << i << " (" << sideQuery[0]["hits"] << ") - Y";
+				std::string lineupHits = sideQuery[0]["hits"];
+				if (lineupHits.compare("S") == 0) {
+					if (pitcherThrows.compare("R") == 0) {
+						lineupHits += "/L";
+					}
+					else {
+						lineupHits += "/R";
+					}
 				}
 				else {
-				    inningOutput << i << " (" << sideQuery[0]["hits"] << ") - N";
+					lineupHits += "/"+sideQuery[0]["hits"];
+				}
+				int numHits = std::stoi(posHitQuery[0]["count(*)"]);
+				if (numHits > 0) {
+				    inningOutput << i << " (" << lineupHits << ") - Y";
+				}
+				else {
+				    inningOutput << i << " (" << lineupHits << ") - N";
 				}
 			}
 
@@ -284,6 +320,18 @@ int main() {
 				std::vector<std::map<std::string, std::string>> pHitQuery = DBWrapper::queryDatabase(db, query);
 
 				std::string hitterHits = pHitQuery[0]["hits"];
+				if (hitterHits.compare("S") == 0) {
+					if (pitcherThrows.compare("R") == 0) {
+						hitterHits += "/L";
+					}
+					else {
+						hitterHits += "/R";
+					}
+				}
+				else {
+					hitterHits += "/"+pHitQuery[0]["hits"];
+				}
+
 				query = "select distinct gamedate,inningtype from PBP where hitterid="+hitter["id"]+" and umpire='"+umpire+"' and event >= 0 and inningnum <= 7 and isHitterStarter=1 and isPitcherStarter=1 order by gamedate desc limit 1";
 				std::vector<std::map<std::string, std::string>> huDateRes = DBWrapper::queryDatabase(db, query);
 
