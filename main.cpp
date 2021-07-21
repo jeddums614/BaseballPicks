@@ -153,15 +153,13 @@ int main() {
 				std::string lineupHits = sideQuery[0]["hits"];
 				if (lineupHits.compare("S") == 0) {
 					if (pitcherThrows.compare("R") == 0) {
-						lineupHits += "/L";
+						lineupHits = "L";
 					}
 					else {
-						lineupHits += "/R";
+						lineupHits = "R";
 					}
 				}
-				else {
-					lineupHits += "/"+sideQuery[0]["hits"];
-				}
+
 				int numHits = std::stoi(posHitQuery[0]["count(*)"]);
 				if (numHits > 0) {
 					inningOutput << i << " (" << lineupHits << ") - Y";
@@ -203,15 +201,13 @@ int main() {
 				std::string lineupHits = sideQuery[0]["hits"];
 				if (lineupHits.compare("S") == 0) {
 					if (pitcherThrows.compare("R") == 0) {
-						lineupHits += "/L";
+						lineupHits = "L";
 					}
 					else {
-						lineupHits += "/R";
+						lineupHits = "R";
 					}
 				}
-				else {
-					lineupHits += "/"+sideQuery[0]["hits"];
-				}
+
 				int numHits = std::stoi(posHitQuery[0]["count(*)"]);
 				if (numHits > 0) {
 				    inningOutput << i << " (" << lineupHits << ") - Y";
@@ -255,15 +251,13 @@ int main() {
 				std::string lineupHits = sideQuery[0]["hits"];
 				if (lineupHits.compare("S") == 0) {
 					if (pitcherThrows.compare("R") == 0) {
-						lineupHits += "/L";
+						lineupHits = "L";
 					}
 					else {
-						lineupHits += "/R";
+						lineupHits = "R";
 					}
 				}
-				else {
-					lineupHits += "/"+sideQuery[0]["hits"];
-				}
+
 				int numHits = std::stoi(posHitQuery[0]["count(*)"]);
 				if (numHits > 0) {
 				    inningOutput << i << " (" << lineupHits << ") - Y";
@@ -290,12 +284,10 @@ int main() {
 				return false;
 			}
 		});
-		if (!anyMatch) {
-			++side;
-			continue;
-		}
 
-		std::copy (lineups.begin(), lineups.end(), std::ostream_iterator<std::string>(std::cout, "\n"));
+		if (anyMatch && lineups.size() > 1) {
+		    std::copy (lineups.begin(), lineups.end(), std::ostream_iterator<std::string>(std::cout, "\n"));
+		}
 
 		++side;
 	}
