@@ -169,9 +169,7 @@ int main() {
 			    }
 			}
 
-			if ((tmType == teamType::AWAY && innType[0] == 't') || (tmType == teamType::HOME && innType[0] == 'b')) {
-			    lineups.push_back("hp: "+pOppDate+" ("+innType+") "+inningOutput.str());
-			}
+			lineups.push_back("hp: "+pOppDate+" ("+innType+") "+inningOutput.str());
 		}
 
 		query = "select gamedate,inningtype from PBP where pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1 order by gamedate desc limit 1;";
@@ -219,9 +217,7 @@ int main() {
 				}
 			}
 
-			if ((tmType == teamType::AWAY && innType[0] == 't') || (tmType == teamType::HOME && innType[0] == 'b')) {
-			    lineups.push_back("pu: "+pUmpDate+" ("+innType+") "+inningOutput.str());
-			}
+			lineups.push_back("pu: "+pUmpDate+" ("+innType+") "+inningOutput.str());
 		}
 
 		query = "select p.gamedate,p.awayteam,p.hometeam,pi.throws from PBP p inner join players pi on pi.id=p.pitcherid where p.umpire='"+umpire+"' and (p.awayteam='"+opponent+"' or p.hometeam='"+opponent+"') and p.isPitcherStarter=1 order by p.gamedate desc limit 1;";
@@ -271,12 +267,10 @@ int main() {
 				}
 			}
 
-			if ((tmType == teamType::AWAY && innType[0] == 't') || (tmType == teamType::HOME && innType[0] == 'b')) {
-		        lineups.push_back("hu: "+uOppDate+" ("+innType+") "+inningOutput.str());
-			}
+		    lineups.push_back("hu: "+uOppDate+" ("+innType+") "+inningOutput.str());
 		}
 
-		if (!lineups.empty()) {
+		if (lineups.size() == 3) {
 		    std::copy (lineups.begin(), lineups.end(), std::ostream_iterator<std::string>(std::cout, "\n"));
 		}
 
