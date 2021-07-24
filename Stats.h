@@ -23,21 +23,29 @@ struct Hitter {
 	std::string hits;
 	char gotHit;
 	int batpos;
+	std::string name;
 };
 
 class Lineup {
 public:
-	Lineup(const std::string & lbl, const std::string & innType) : label(lbl), inningType(innType) {
+	Lineup(const std::string & lbl, const std::string & innType) : label(lbl), inningType(innType), oneLineOutput(false) {
 		hitters.resize(9);
 	}
 
 	friend std::ostream& operator<<(std::ostream& os, const Lineup & lineup) {
 		os << lineup.label << " (" << lineup.inningType << ") ";
+		if (!lineup.oneLineOutput) {
+			os << "\n";
+		}
 		for (Hitter h : lineup.hitters) {
-			if (h.batpos > 1) {
+			if (lineup.oneLineOutput && h.batpos > 1) {
 				os << ",";
 			}
 			os << h.batpos << " (" << h.hits << ") - " << h.gotHit;
+			if (!lineup.oneLineOutput) {
+				os << " - " << h.name << " (" << h.playerId << ")";
+				os << "\n";
+			}
 		}
 
 		return os;
@@ -52,10 +60,13 @@ public:
 	}
 
 	const std::string & getInningType() { return inningType;}
+
+	void setOutputType(bool isOneLine) { oneLineOutput = isOneLine; }
 private:
 	std::vector<Hitter> hitters;
 	std::string label;
 	std::string inningType;
+	bool oneLineOutput;
 };
 
 

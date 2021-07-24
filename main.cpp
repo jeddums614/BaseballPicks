@@ -142,11 +142,13 @@ int main() {
 					hitter.batpos = i;
 					hitter.hits = "?";
 					hitter.gotHit = '?';
+					hitter.playerId = std::numeric_limits<int>::min();
+					hitter.name = "";
 					hpLineup.addHitter(hitter);
 				    continue;
 				}
 
-				query = "select hits from players where id="+hitterQuery[0]["hitterid"]+";";
+				query = "select hits,name from players where id="+hitterQuery[0]["hitterid"]+";";
 				std::vector<std::map<std::string, std::string>> sideQuery = DBWrapper::queryDatabase(db, query);
 
 				query = "select count(*) from PBP where gamedate='"+pOppDate+"' and pitcherid="+std::to_string(pitcherId)+" and isHitterStarter=1 and batpos="+std::to_string(i)+" and event > 0 and inningtype='"+pOppDateQuery[0]["inningtype"]+"' and inningnum <= 7;";
@@ -165,11 +167,15 @@ int main() {
 				if (numHits > 0) {
 					hitter.batpos = i;
 					hitter.gotHit = 'Y';
+					hitter.playerId = std::stoi(hitterQuery[0]["hitterid"]);
+					hitter.name = sideQuery[0]["name"];
 					hitter.hits = lineupHits;
 				}
 				else {
 					hitter.batpos = i;
 					hitter.gotHit = 'N';
+					hitter.playerId = std::stoi(hitterQuery[0]["hitterid"]);
+					hitter.name = sideQuery[0]["name"];
 					hitter.hits = lineupHits;
 			    }
 				hpLineup.addHitter(hitter);
@@ -195,11 +201,12 @@ int main() {
 					hitter.batpos = i;
 					hitter.gotHit = '?';
 					hitter.hits = "?";
+					hitter.playerId = std::numeric_limits<int>::min();
 					puLineup.addHitter(hitter);
 					continue;
 				}
 
-				query = "select hits from players where id="+hitterQuery[0]["hitterid"]+";";
+				query = "select hits,name from players where id="+hitterQuery[0]["hitterid"]+";";
 				std::vector<std::map<std::string, std::string>> sideQuery = DBWrapper::queryDatabase(db, query);
 
 				query = "select count(*) from PBP where gamedate='"+pUmpDate+"' and umpire='"+umpire+"' and isHitterStarter=1 and batpos="+std::to_string(i)+" and event > 0 and inningtype='"+pUmpDateQuery[0]["inningtype"]+"' and inningnum <= 7 and isPitcherStarter=1;";
@@ -218,11 +225,15 @@ int main() {
 				if (numHits > 0) {
 					hitter.batpos = i;
 					hitter.gotHit = 'Y';
+					hitter.playerId = std::stoi(hitterQuery[0]["hitterid"]);
+					hitter.name = sideQuery[0]["name"];
 					hitter.hits = lineupHits;
 				}
 				else {
 				    hitter.batpos = i;
 				    hitter.gotHit = 'N';
+				    hitter.playerId = std::stoi(hitterQuery[0]["hitterid"]);
+				    hitter.name = sideQuery[0]["name"];
 				    hitter.hits = lineupHits;
 				}
 
@@ -255,7 +266,7 @@ int main() {
 					continue;
 				}
 
-				query = "select hits from players where id="+hitterQuery[0]["hitterid"]+";";
+				query = "select hits,name from players where id="+hitterQuery[0]["hitterid"]+";";
 				std::vector<std::map<std::string, std::string>> sideQuery = DBWrapper::queryDatabase(db, query);
 
 				query = "select count(*) from PBP where gamedate='"+uOppDate+"' and (awayteam='"+opponent+"' or hometeam='"+opponent+"') and isHitterStarter=1 and batpos="+std::to_string(i)+" and event > 0 and inningtype='"+innType+"' and inningnum <= 7;";
@@ -274,11 +285,15 @@ int main() {
 				if (numHits > 0) {
 					hitter.batpos = i;
 					hitter.gotHit = 'Y';
+					hitter.playerId = std::stoi(hitterQuery[0]["hitterid"]);
+					hitter.name = sideQuery[0]["name"];
 					hitter.hits = lineupHits;
 				}
 				else {
 					hitter.batpos = i;
 					hitter.gotHit = 'N';
+					hitter.playerId = std::stoi(hitterQuery[0]["hitterid"]);
+					hitter.name = sideQuery[0]["name"];
 					hitter.hits = lineupHits;
 				}
 
@@ -290,6 +305,12 @@ int main() {
 
 		if (lineups.size() == 3) {
 			for (Lineup l : lineups) {
+				l.setOutputType(true);
+				std::cout << l << std::endl;
+			}
+			std::cout << std::endl;
+			for (Lineup l : lineups) {
+				l.setOutputType(false);
 				std::cout << l << std::endl;
 			}
 		}
