@@ -19,7 +19,6 @@ struct Stats {
 };
 
 struct Hitter {
-	int playerId;
 	std::string hits;
 	char gotHit;
 	int batpos;
@@ -43,7 +42,7 @@ public:
 			}
 			os << h.batpos << " (" << h.hits << ") - " << h.gotHit;
 			if (!lineup.oneLineOutput) {
-				os << " - " << h.name << " (" << h.playerId << ")";
+				os << " - " << h.name;
 				os << "\n";
 			}
 		}
@@ -59,7 +58,8 @@ public:
 		return hitters[batpos-1];
 	}
 
-	const std::string & getInningType() { return inningType;}
+	const std::string & getInningType() noexcept { return inningType;}
+	const std::string & getLabel() noexcept { return label; }
 
 	void setOutputType(bool isOneLine) { oneLineOutput = isOneLine; }
 private:

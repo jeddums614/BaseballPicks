@@ -78,10 +78,15 @@ int main() {
 
 		if (gameParts.size() != 5) {
 			std::cout << "Not all info filled out in todaymatchups.txt for this line" << std::endl;
+			++side;
 			continue;
 		}
 
 		std::string pitcher = gameParts[0];
+		if (pitcher.empty()) {
+			++side;
+			continue;
+		}
 		std::string opponent = gameParts[1];
 		std::string umpire = gameParts[2];
 		std::size_t pos = umpire.find("'");
@@ -124,7 +129,7 @@ int main() {
 
 		std::vector<Lineup> lineups;
 
-		query = "select gamedate,inningtype from PBP where pitcherid="+std::to_string(pitcherId)+" and (awayteam='"+opponent+"' or hometeam='"+opponent+"') and isPitcherStarter=1 order by gamedate desc limit 1;";
+		query = "select gamedate,inningtype from PBP where pitcherid="+std::to_string(pitcherId)+" and (awayteam='"+opponent+"' or hometeam='"+opponent+"') and isPitcherStarter=1 and inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' order by gamedate desc limit 1;";
 		std::vector<std::map<std::string, std::string>> pOppDateQuery = DBWrapper::queryDatabase(db, query);
 
 		std::string pOppDate = !pOppDateQuery.empty() ? pOppDateQuery[0]["gamedate"] : "";
@@ -142,7 +147,6 @@ int main() {
 					hitter.batpos = i;
 					hitter.hits = "?";
 					hitter.gotHit = '?';
-					hitter.playerId = std::numeric_limits<int>::min();
 					hitter.name = "";
 					hpLineup.addHitter(hitter);
 				    continue;
@@ -151,7 +155,7 @@ int main() {
 				query = "select hits,name from players where id="+hitterQuery[0]["hitterid"]+";";
 				std::vector<std::map<std::string, std::string>> sideQuery = DBWrapper::queryDatabase(db, query);
 
-				query = "select count(*) from PBP where gamedate='"+pOppDate+"' and pitcherid="+std::to_string(pitcherId)+" and isHitterStarter=1 and batpos="+std::to_string(i)+" and event > 0 and inningtype='"+pOppDateQuery[0]["inningtype"]+"' and inningnum <= 7;";
+				query = "select count(*) from PBP where gamedate='"+pOppDate+"' and pitcherid="+std::to_string(pitcherId)+" and hitterid="+hitterQuery[0]["hitterid"]+" and isHitterStarter=1 and isPitcherStarter=1 and batpos="+std::to_string(i)+" and event > 0 and inningtype='"+pOppDateQuery[0]["inningtype"]+"' and inningnum <= 7;";
 				std::vector<std::map<std::string, std::string>> posHitQuery = DBWrapper::queryDatabase(db, query);
 				std::string lineupHits = sideQuery[0]["hits"];
 				if (lineupHits.compare("S") == 0) {
@@ -167,24 +171,25 @@ int main() {
 				if (numHits > 0) {
 					hitter.batpos = i;
 					hitter.gotHit = 'Y';
-					hitter.playerId = std::stoi(hitterQuery[0]["hitterid"]);
 					hitter.name = sideQuery[0]["name"];
 					hitter.hits = lineupHits;
 				}
 				else {
 					hitter.batpos = i;
 					hitter.gotHit = 'N';
-					hitter.playerId = std::stoi(hitterQuery[0]["hitterid"]);
 					hitter.name = sideQuery[0]["name"];
 					hitter.hits = lineupHits;
 			    }
 				hpLineup.addHitter(hitter);
 			}
 
-			lineups.push_back(hpLineup);
+			if ((tmType == teamType::AWAY && innType[0] == 't') ||
+				(tmType == teamType::HOME && innType[0] == 'b')) {
+				lineups.push_back(hpLineup);
+			}
 		}
 
-		query = "select gamedate,inningtype from PBP where pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1 order by gamedate desc limit 1;";
+		query = "select gamedate,inningtype from PBP where pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1 and inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' order by gamedate desc limit 1;";
 		std::vector<std::map<std::string, std::string>> pUmpDateQuery = DBWrapper::queryDatabase(db, query);
 
 		std::string pUmpDate = !pUmpDateQuery.empty() ? pUmpDateQuery[0]["gamedate"] : "";
@@ -201,7 +206,6 @@ int main() {
 					hitter.batpos = i;
 					hitter.gotHit = '?';
 					hitter.hits = "?";
-					hitter.playerId = std::numeric_limits<int>::min();
 					puLineup.addHitter(hitter);
 					continue;
 				}
@@ -225,14 +229,12 @@ int main() {
 				if (numHits > 0) {
 					hitter.batpos = i;
 					hitter.gotHit = 'Y';
-					hitter.playerId = std::stoi(hitterQuery[0]["hitterid"]);
 					hitter.name = sideQuery[0]["name"];
 					hitter.hits = lineupHits;
 				}
 				else {
 				    hitter.batpos = i;
 				    hitter.gotHit = 'N';
-				    hitter.playerId = std::stoi(hitterQuery[0]["hitterid"]);
 				    hitter.name = sideQuery[0]["name"];
 				    hitter.hits = lineupHits;
 				}
@@ -240,10 +242,13 @@ int main() {
 				puLineup.addHitter(hitter);
 			}
 
-			lineups.push_back(puLineup);
+			if ((tmType == teamType::AWAY && innType[0] == 't') ||
+				(tmType == teamType::HOME && innType[0] == 'b')) {
+			    lineups.push_back(puLineup);
+			}
 		}
 
-		query = "select p.gamedate,p.awayteam,p.hometeam,pi.throws from PBP p inner join players pi on pi.id=p.pitcherid where p.umpire='"+umpire+"' and (p.awayteam='"+opponent+"' or p.hometeam='"+opponent+"') and p.isPitcherStarter=1 order by p.gamedate desc limit 1;";
+		query = "select p.gamedate,p.awayteam,p.hometeam,pi.throws from PBP p inner join players pi on pi.id=p.pitcherid where p.umpire='"+umpire+"' and (p.awayteam='"+opponent+"' or p.hometeam='"+opponent+"') and p.isPitcherStarter=1 and p.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' order by p.gamedate desc limit 1;";
 		std::vector<std::map<std::string, std::string>> uOppDateQuery = DBWrapper::queryDatabase(db, query);
 
 		std::string uOppDate = !uOppDateQuery.empty() ? uOppDateQuery[0]["gamedate"] : "";
@@ -269,7 +274,7 @@ int main() {
 				query = "select hits,name from players where id="+hitterQuery[0]["hitterid"]+";";
 				std::vector<std::map<std::string, std::string>> sideQuery = DBWrapper::queryDatabase(db, query);
 
-				query = "select count(*) from PBP where gamedate='"+uOppDate+"' and (awayteam='"+opponent+"' or hometeam='"+opponent+"') and isHitterStarter=1 and batpos="+std::to_string(i)+" and event > 0 and inningtype='"+innType+"' and inningnum <= 7;";
+				query = "select count(*) from PBP where gamedate='"+uOppDate+"' and (awayteam='"+opponent+"' or hometeam='"+opponent+"') and isHitterStarter=1 and batpos="+std::to_string(i)+" and event > 0 and inningtype='"+innType+"' and inningnum <= 7 and isPitcherStarter=1;";
 				std::vector<std::map<std::string, std::string>> posHitQuery = DBWrapper::queryDatabase(db, query);
 				std::string lineupHits = sideQuery[0]["hits"];
 				if (lineupHits.compare("S") == 0) {
@@ -285,14 +290,12 @@ int main() {
 				if (numHits > 0) {
 					hitter.batpos = i;
 					hitter.gotHit = 'Y';
-					hitter.playerId = std::stoi(hitterQuery[0]["hitterid"]);
 					hitter.name = sideQuery[0]["name"];
 					hitter.hits = lineupHits;
 				}
 				else {
 					hitter.batpos = i;
 					hitter.gotHit = 'N';
-					hitter.playerId = std::stoi(hitterQuery[0]["hitterid"]);
 					hitter.name = sideQuery[0]["name"];
 					hitter.hits = lineupHits;
 				}
@@ -300,18 +303,23 @@ int main() {
 				huLineup.addHitter(hitter);
 			}
 
-		    lineups.push_back(huLineup);
+			if ((tmType == teamType::AWAY && innType[0] == 't') ||
+				(tmType == teamType::HOME && innType[0] == 'b')) {
+		        lineups.push_back(huLineup);
+			}
 		}
 
-		if (lineups.size() == 3) {
-			for (Lineup l : lineups) {
+		if (std::find_if(lineups.begin(), lineups.end(), [](Lineup & l) { return l.getLabel().find("pu:") != std::string::npos;}) != lineups.end()) {
+		    for (Lineup l : lineups) {
 				l.setOutputType(true);
 				std::cout << l << std::endl;
 			}
 			std::cout << std::endl;
 			for (Lineup l : lineups) {
 				l.setOutputType(false);
-				std::cout << l << std::endl;
+				if (l.getLabel().find("pu:") == std::string::npos) {
+					std::cout << l << std::endl;
+				}
 			}
 		}
 
