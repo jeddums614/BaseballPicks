@@ -5,18 +5,10 @@
  *      Author: jeremy
  */
 
-#ifndef STATS_H_
-#define STATS_H_
+#ifndef LINEUP_H_
+#define LINEUP_H_
 
 #include <optional>
-
-struct Stats {
-	double hits;
-	double atbats;
-	double strikeouts;
-	double sacflies;
-	double homeruns;
-};
 
 struct Hitter {
 	std::string hits;
@@ -71,4 +63,4 @@ private:
 
 
 
-#endif /* STATS_H_ */
+#endif /* LINEUP_H_ */
