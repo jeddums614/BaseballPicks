@@ -38,22 +38,29 @@ std::ostream& operator<< (std::ostream& os, const teamType& t) {
 	return (os);
 }
 
-int main() {
+int main(int argc, char** argv) {
 	sqlite3* db = NULL;
 
-	auto todaydate = std::chrono::system_clock::now();
-	std::time_t now_c = std::chrono::system_clock::to_time_t(todaydate);
-	std::tm now_tm = *std::localtime(&now_c);
-	int year = now_tm.tm_year+1900;
-	std::string datestr = std::to_string(year) + "-";
-	if (now_tm.tm_mon+1 < 10) {
-		datestr += "0";
+	std::string datestr = "";
+	if (argc > 1) {
+		datestr = argv[1];
 	}
-	datestr += std::to_string(now_tm.tm_mon+1) + "-";
-	if (now_tm.tm_mday < 10) {
-		datestr += "0";
+
+	if (datestr.empty()) {
+	    auto todaydate = std::chrono::system_clock::now();
+	    std::time_t now_c = std::chrono::system_clock::to_time_t(todaydate);
+	    std::tm now_tm = *std::localtime(&now_c);
+	    int year = now_tm.tm_year+1900;
+	    datestr = std::to_string(year) + "-";
+	    if (now_tm.tm_mon+1 < 10) {
+		    datestr += "0";
+	    }
+	    datestr += std::to_string(now_tm.tm_mon+1) + "-";
+	    if (now_tm.tm_mday < 10) {
+		    datestr += "0";
+	    }
+	    datestr += std::to_string(now_tm.tm_mday);
 	}
-	datestr += std::to_string(now_tm.tm_mday);
 	const std::string startdate = "2021-04-01";
 
 	const int dbflags = SQLITE_OPEN_READWRITE;
@@ -133,7 +140,7 @@ int main() {
 
 		std::vector<Lineup> lineups;
 
-		query = "select distinct gamedate,inningtype from PBP where pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1 and gamenumber="+(!isDoubleheader ? "1" : "2")+" order by gamedate desc limit 1;";
+		query = "select distinct gamedate,inningtype from PBP where gamedate < '"+datestr+"' and pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1 and gamenumber="+(!isDoubleheader ? "1" : "2")+" order by gamedate desc limit 1;";
 		std::vector<std::map<std::string, std::string>> pUmpDateQuery = DBWrapper::queryDatabase(db, query);
 
 		for (std::map<std::string, std::string> pu : pUmpDateQuery) {
