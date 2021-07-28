@@ -76,7 +76,7 @@ int main() {
 		std::cout << tmType << std::endl;
 		std::vector<std::string> gameParts = Utils::split(line);
 
-		if (gameParts.size() != 5) {
+		if (gameParts.size() < 5) {
 			std::cout << "Not all info filled out in todaymatchups.txt for this line" << std::endl;
 			++side;
 			continue;
@@ -95,6 +95,10 @@ int main() {
 		}
 		std::string ballpark = gameParts[3];
 		std::string gametime = gameParts[4];
+		bool isDoubleheader = false;
+		if (gameParts.size() == 6) {
+			isDoubleheader = true;
+		}
 
 		std::string query = "select id,throws from players where position='P' and (name='" + pitcher +"' or alternatename like '%" + pitcher + "%');";
 		std::vector<std::map<std::string, std::string>> res = DBWrapper::queryDatabase(db, query);
@@ -129,7 +133,7 @@ int main() {
 
 		std::vector<Lineup> lineups;
 
-		query = "select distinct gamedate,inningtype from PBP where pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1 order by gamedate desc limit 1;";
+		query = "select distinct gamedate,inningtype from PBP where pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1 and gamenumber="+(!isDoubleheader ? "1" : "2")+" order by gamedate desc limit 1;";
 		std::vector<std::map<std::string, std::string>> pUmpDateQuery = DBWrapper::queryDatabase(db, query);
 
 		for (std::map<std::string, std::string> pu : pUmpDateQuery) {
