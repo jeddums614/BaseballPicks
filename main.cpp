@@ -129,7 +129,7 @@ int main() {
 
 		std::vector<Lineup> lineups;
 
-		query = "select distinct gamedate,inningtype from PBP where pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1 order by gamedate desc;";
+		query = "select distinct gamedate,inningtype from PBP where pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1 order by gamedate desc limit 1;";
 		std::vector<std::map<std::string, std::string>> pUmpDateQuery = DBWrapper::queryDatabase(db, query);
 
 		for (std::map<std::string, std::string> pu : pUmpDateQuery) {
@@ -183,11 +183,15 @@ int main() {
 		}
 
 		if (!lineups.empty()) {
+			std::stringstream ss;
+			ss.str("");
 		    for (Lineup l : lineups) {
 				l.setOutputType(true);
-				std::cout << l << std::endl;
+				ss << l << "\n";
 			}
-			std::cout << std::endl;
+			if (!ss.str().empty()) {
+				std::cout << ss.str() << std::endl;
+			}
 		}
 
 		++side;
