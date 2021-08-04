@@ -162,14 +162,6 @@ int main(int argc, char** argv) {
 				query = "select count(*) from PBP where gamedate='"+pUmpDate+"' and umpire='"+umpire+"' and isHitterStarter=1 and hitterid="+hitterQuery[0]["hitterid"]+" and inningnum <= 7 and isPitcherStarter=1 and event > 0;";
 				std::vector<std::map<std::string, std::string>> posHitQuery = DBWrapper::queryDatabase(db, query);
 				std::string lineupHits = sideQuery[0]["hits"];
-				if (lineupHits.compare("S") == 0) {
-					if (pitcherThrows.compare("R") == 0) {
-						lineupHits = "L";
-					}
-					else {
-						lineupHits = "R";
-					}
-				}
 
 				int numHits = std::stoi(posHitQuery[0]["count(*)"]);
 				if (numHits > 0) {
