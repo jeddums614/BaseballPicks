@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
 			ss.str("");
 		    for (Lineup l : lineups) {
 				l.setOutputType(true);
-				ss << l;;
+				ss << l;
 		    }
 
 			if (!ss.str().empty()) {
