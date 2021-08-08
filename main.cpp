@@ -186,54 +186,8 @@ int main(int argc, char** argv) {
 			ss.str("");
 		    for (Lineup l : lineups) {
 				l.setOutputType(true);
-				ss << l << "\n";
+				ss << l;;
 		    }
-
-			query = "select id,name from players where team like '%"+opponent+"' and position != 'P'";
-			if (opponent.compare("LAA") == 0) {
-				query += " or name='Shohei Ohtani'";
-			}
-			std::vector<std::map<std::string, std::string>> playerList = DBWrapper::queryDatabase(db, query);
-
-			for (std::map<std::string, std::string> hitter : playerList) {
-				query = "select distinct gamedate from PBP where hitterid="+hitter["id"]+" and pitcherid="+std::to_string(pitcherId)+" and event >= 0 order by gamedate desc limit 1";
-				std::vector<std::map<std::string, std::string>> hpRes = DBWrapper::queryDatabase(db, query);
-
-				bool showHitter = true;
-
-				if (!hpRes.empty()) {
-					std::string hpDate = hpRes[0]["gamedate"];
-
-					query = "select count(*) from PBP where gamedate='"+hpDate+"' and hitterid="+hitter["id"]+" and pitcherid="+std::to_string(pitcherId)+" and event > 0;";
-					std::vector<std::map<std::string, std::string>> hpHitRes = DBWrapper::queryDatabase(db, query);
-
-				    if (hpHitRes[0]["count(*)"].compare("0") == 0) {
-				    	showHitter = false;
-				    }
-				}
-
-				query = "select distinct gamedate from PBP p inner join players pi on pi.id=p.pitcherid where p.hitterid="+hitter["id"]+" and p.umpire='"+umpire+"' and pi.throws='"+pitcherThrows+"' and p.isPitcherStarter=1 and p.isHitterStarter=1 and p.event >= 0 order by gamedate desc limit 1";
-				std::vector<std::map<std::string, std::string>> huRes = DBWrapper::queryDatabase(db, query);
-
-				if (!huRes.empty() && showHitter) {
-					std::string huDate = huRes[0]["gamedate"];
-
-					query = "select count(*) from PBP where gamedate='"+huDate+"' and hitterid="+hitter["id"]+" and isPitcherStarter=1 and event > 0;";
-					std::vector<std::map<std::string, std::string>> huHitRes = DBWrapper::queryDatabase(db, query);
-
-					if (huHitRes[0]["count(*)"].compare("0") == 0) {
-						showHitter = false;
-					}
-				}
-
-				if (huRes.empty() && hpRes.empty()) {
-					showHitter = false;
-				}
-
-				if (showHitter) {
-					ss << hitter["name"] << "\n";
-				}
-			}
 
 			if (!ss.str().empty()) {
 				std::cout << ss.str() << std::endl;

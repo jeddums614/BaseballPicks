@@ -28,6 +28,7 @@ public:
 		if (!lineup.oneLineOutput) {
 			os << "\n";
 		}
+		std::map<std::string, std::vector<char>> hitSeq;
 		for (Hitter h : lineup.hitters) {
 			if (lineup.oneLineOutput && h.batpos > 1) {
 				os << ",";
@@ -36,6 +37,23 @@ public:
 			if (!lineup.oneLineOutput) {
 				os << " - " << h.name;
 				os << "\n";
+			}
+
+			hitSeq[h.hits].push_back(h.gotHit);
+		}
+
+		os << "\n";
+		for (std::pair<std::string, std::vector<char>> hpr : hitSeq) {
+			if (hpr.second.size() > 0) {
+			    os << hpr.first << ":";
+			    for (std::vector<char>::const_iterator it = hpr.second.begin(); it != hpr.second.end(); ++it){
+			    	if (it != hpr.second.begin()) {
+			    		os << ",";
+			    	}
+
+			    	os << *it;
+			    }
+			    os << "\n";
 			}
 		}
 
