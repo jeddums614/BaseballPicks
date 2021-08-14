@@ -144,52 +144,54 @@ int main(int argc, char** argv) {
 			numGames = std::numeric_limits<int>::min();
 		}
 
-        const int startYear = 2018;
-        const int endYear = 2021;
+		if (numGames != std::numeric_limits<int>::min()) {
+	        const int startYear = 2014;
+	        const int endYear = 2021;
 
-        std::string querydatestr = "";
-        for (int yr = startYear; yr <= endYear; ++yr) {
-        	query = "select gamedate from (";
-        	query += " select gamedate,row_number() over (order by gamedate) as gamenum from (";
-        	query += " select distinct gamedate from PBP where gamedate like '"+std::to_string(yr)+"-%' and gamedate < '"+datestr+"' and pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1))";
-        	query += " where gamenum="+std::to_string(numGames+1)+";";
+	        std::string querydatestr = "";
+	        for (int yr = startYear; yr <= endYear; ++yr) {
+	        	query = "select gamedate from (";
+	        	query += " select gamedate,row_number() over (order by gamedate) as gamenum from (";
+	        	query += " select distinct gamedate from PBP where gamedate like '"+std::to_string(yr)+"-%' and gamedate < '"+datestr+"' and pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1))";
+	        	query += " where gamenum="+std::to_string(numGames+1)+";";
 
-        	std::vector<std::map<std::string, std::string>> gdRes = DBWrapper::queryDatabase(db, query);
+	        	std::vector<std::map<std::string, std::string>> gdRes = DBWrapper::queryDatabase(db, query);
 
-        	if (!gdRes.empty()) {
-        		if (!querydatestr.empty()) {
-        			querydatestr += ",";
-        		}
+	        	if (!gdRes.empty()) {
+	        		if (!querydatestr.empty()) {
+	        			querydatestr += ",";
+	        		}
 
-        		querydatestr += "'"+gdRes[0]["gamedate"]+"'";
-        	}
-        }
+	        		querydatestr += "'"+gdRes[0]["gamedate"]+"'";
+	        	}
+	        }
 
-        if (!querydatestr.empty()) {
-    		std::stringstream ss;
-    		ss.str("");
+	        if (!querydatestr.empty()) {
+	    		std::stringstream ss;
+	    		ss.str("");
 
-    		query = "select p.gamedate,p.inningtype,p.inningnum,p.batpos,p.hitterid,p.event";
-    		query += " from PBP p";
-    		query += " where p.gamedate in ("+querydatestr+")";
-    		query += " and p.pitcherid="+std::to_string(pitcherId)+" and p.isHitterStarter=1";
-    		query += " order by p.batpos;";
+	    		query = "select p.gamedate,p.inningtype,p.inningnum,p.batpos,p.hitterid,p.event";
+	    		query += " from PBP p";
+	    		query += " where p.gamedate in ("+querydatestr+")";
+	    		query += " and p.pitcherid="+std::to_string(pitcherId)+" and p.isHitterStarter=1";
+	    		query += " order by p.batpos;";
 
-    		std::vector<std::map<std::string, std::string>> gameRes = DBWrapper::queryDatabase(db, query);
+	    		std::vector<std::map<std::string, std::string>> gameRes = DBWrapper::queryDatabase(db, query);
 
-   			for (std::map<std::string, std::string> gr : gameRes) {
-   				std::string hits = " ";
-   				if (!gr["hitterid"].empty()) {
-   					query = "select hits from players where id="+gr["hitterid"]+";";
-   					std::vector<std::map<std::string, std::string>> hitsRes = DBWrapper::queryDatabase(db, query);
+	   			for (std::map<std::string, std::string> gr : gameRes) {
+	   				std::string hits = " ";
+	   				if (!gr["hitterid"].empty()) {
+	   					query = "select hits from players where id="+gr["hitterid"]+";";
+	   					std::vector<std::map<std::string, std::string>> hitsRes = DBWrapper::queryDatabase(db, query);
 
-   					hits = hitsRes[0]["hits"];
-   				}
-   				ss << gr["gamedate"] << "," << gr["batpos"] << "," << hits << ","
-   				   << gr["inningtype"] << "," << gr["inningnum"] << "," << gr["event"] << "\n";
-   			}
+	   					hits = hitsRes[0]["hits"];
+	   				}
+	   				ss << gr["gamedate"] << "," << gr["batpos"] << "," << hits << ","
+	   				   << gr["inningtype"] << "," << gr["inningnum"] << "," << gr["event"] << "\n";
+	   			}
 
-    		std::cout << ss.str() << std::endl;
+	    		std::cout << ss.str() << std::endl;
+	        }
 		}
 
 		++side;
