@@ -16,7 +16,6 @@
 #include <tuple>
 #include <iterator>
 #include "Utils.h"
-#include "Lineup.h"
 
 enum class teamType { AWAY, HOME };
 
@@ -134,165 +133,63 @@ int main(int argc, char** argv) {
 			continue;
 		}
 
-		std::vector<Lineup> lineups;
+		query = "select count(distinct gamedate) as numgames from PBP where gamedate like '2021-%' and gamedate < '"+datestr+"' and pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1";
+		std::vector<std::map<std::string, std::string>> pUmpDateRes = DBWrapper::queryDatabase(db, query);
 
-		query = "select distinct gamedate,inningtype from PBP where gamedate < '"+datestr+"' and pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' order by gamedate desc;";
-		std::vector<std::map<std::string, std::string>> pUmpDateQuery = DBWrapper::queryDatabase(db, query);
-
-		for (std::map<std::string, std::string> pu : pUmpDateQuery) {
-			std::string pUmpDate = pu["gamedate"];
-			std::string innType = pu["inningtype"];
-
-			Lineup puLineup("pu: "+pUmpDate,innType);
-			for (int i = 1; i <= 9; ++i) {
-				Hitter hitter;
-				query = "select hitterid from PBP where gamedate='"+pUmpDate+"' and umpire='"+umpire+"' and isHitterStarter=1 and batpos="+std::to_string(i)+" and inningtype='"+innType+"' and inningnum <= 7;";
-				std::vector<std::map<std::string, std::string>> hitterQuery = DBWrapper::queryDatabase(db, query);
-				if (hitterQuery.empty()) {
-					hitter.batpos = i;
-					hitter.gotHit = '?';
-					hitter.hits = "?";
-					puLineup.addHitter(hitter);
-					continue;
-				}
-
-				query = "select hits,name from players where id="+hitterQuery[0]["hitterid"]+";";
-				std::vector<std::map<std::string, std::string>> sideQuery = DBWrapper::queryDatabase(db, query);
-
-				query = "select count(*) from PBP where gamedate='"+pUmpDate+"' and umpire='"+umpire+"' and isHitterStarter=1 and hitterid="+hitterQuery[0]["hitterid"]+" and inningnum <= 7 and isPitcherStarter=1 and event > 0;";
-				std::vector<std::map<std::string, std::string>> posHitQuery = DBWrapper::queryDatabase(db, query);
-				std::string lineupHits = sideQuery[0]["hits"];
-
-				int numHits = std::stoi(posHitQuery[0]["count(*)"]);
-				if (numHits > 0) {
-					hitter.batpos = i;
-					hitter.gotHit = 'Y';
-					hitter.hits = lineupHits;
-				}
-				else {
-				    hitter.batpos = i;
-				    hitter.gotHit = 'N';
-				    hitter.hits = lineupHits;
-				}
-
-				puLineup.addHitter(hitter);
-			}
-
-			lineups.push_back(puLineup);
+		int numGames = std::numeric_limits<int>::min();
+		try {
+			numGames = std::stoi(pUmpDateRes[0]["numgames"]);
+		}
+		catch (...) {
+			numGames = std::numeric_limits<int>::min();
 		}
 
-		if (!lineups.empty()) {
-			std::stringstream ss;
-			ss.str("");
-		    for (Lineup l : lineups) {
-				l.setOutputType(true);
-				ss << l;
+        const int startYear = 2018;
+        const int endYear = 2021;
 
-				for (int i = 1; i <= 9; ++i) {
-					Hitter h =l.getHitter(i);
-					if (h.gotHit == 'Y') {
-						if (argc > 1) {
-							ss << ":";
-						}
-						ss << h.batpos << " - " << h.hits;
-						if (pitcherThrows[0] != h.hits[0]) {
-							if (h.hits[0] != 'S') {
-							    ss << "/S";
-							}
-							else {
-								if (pitcherThrows[0] == 'R') {
-									ss << "/L";
-								}
-								else {
-									ss << "/R";
-								}
-							}
-						}
-						ss << "\n";
-					}
-					else {
-						if (h.hits[0] == 'R') {
-							if (argc > 1) {
-							    ss << ":";
-							}
-							ss << h.batpos << " - L";
-							if (pitcherThrows[0] == h.hits[0]) {
-								ss << "/S";
-							}
-							ss << "\n";
-						}
-						else if (h.hits[0] == 'L') {
-							if (argc > 1) {
-							    ss << ":";
-							}
-							ss << h.batpos << " - R";
-							if (pitcherThrows[0] == h.hits[0]) {
-								ss << "/S";
-							}
-							ss << "\n";
-						}
-						else {
-							if (argc > 1) {
-								ss << ":";
-							}
-							ss << h.batpos << " - " << pitcherThrows << "\n";
-						}
-					}
-				}
-		    }
+        std::string querydatestr = "";
+        for (int yr = startYear; yr <= endYear; ++yr) {
+        	query = "select gamedate from (";
+        	query += " select gamedate,row_number() over (order by gamedate) as gamenum from (";
+        	query += " select distinct gamedate from PBP where gamedate like '"+std::to_string(yr)+"-%' and gamedate < '"+datestr+"' and pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1))";
+        	query += " where gamenum="+std::to_string(numGames+1)+";";
 
-		    query = "select id,name from players where position != 'P' and team like '%"+opponent+"';";
-		    std::vector<std::map<std::string, std::string>> hitterList = DBWrapper::queryDatabase(db, query);
+        	std::vector<std::map<std::string, std::string>> gdRes = DBWrapper::queryDatabase(db, query);
 
-		    for (std::map<std::string, std::string> hitter : hitterList) {
-		    	bool showHitter = true;
-		    	query = "select distinct gamedate from PBP where gamedate < '"+datestr+"' and hitterid="+hitter["id"]+" and pitcherid="+std::to_string(pitcherId)+" and isHitterStarter=1 and isPitcherStarter=1 and event >= 0 order by gamedate desc limit 1;";
-		    	std::vector<std::map<std::string, std::string>> hpDateRes = DBWrapper::queryDatabase(db, query);
+        	if (!gdRes.empty()) {
+        		if (!querydatestr.empty()) {
+        			querydatestr += ",";
+        		}
 
-		    	if (!hpDateRes.empty()) {
-		    		std::string hpDate = hpDateRes[0]["gamedate"];
+        		querydatestr += "'"+gdRes[0]["gamedate"]+"'";
+        	}
+        }
 
-		    		query = "select count(*) from PBP where hitterid="+hitter["id"]+" and pitcherid="+std::to_string(pitcherId)+" and gamedate='"+hpDate+"' and event > 0;";
-		    		std::vector<std::map<std::string, std::string>> numHitRes = DBWrapper::queryDatabase(db, query);
+        if (!querydatestr.empty()) {
+    		std::stringstream ss;
+    		ss.str("");
 
-		    		if (numHitRes[0]["count(*)"].compare("0") == 0) {
-		    			showHitter = false;
-		    		}
-		    	}
+    		query = "select p.gamedate,p.inningtype,p.inningnum,p.batpos,p.hitterid,p.event";
+    		query += " from PBP p";
+    		query += " where p.gamedate in ("+querydatestr+")";
+    		query += " and p.pitcherid="+std::to_string(pitcherId)+" and p.isHitterStarter=1";
+    		query += " order by p.batpos;";
 
-		    	if (showHitter) {
-					query = "select distinct gamedate from PBP where gamedate < '"+datestr+"' and hitterid="+hitter["id"]+" and umpire='"+umpire+"' and isHitterStarter=1 and isPitcherStarter=1 and event >= 0 order by gamedate desc limit 1;";
-					std::vector<std::map<std::string, std::string>> huDateRes = DBWrapper::queryDatabase(db, query);
+    		std::vector<std::map<std::string, std::string>> gameRes = DBWrapper::queryDatabase(db, query);
 
-					if (!huDateRes.empty()) {
-						std::string huDate = huDateRes[0]["gamedate"];
+   			for (std::map<std::string, std::string> gr : gameRes) {
+   				std::string hits = " ";
+   				if (!gr["hitterid"].empty()) {
+   					query = "select hits from players where id="+gr["hitterid"]+";";
+   					std::vector<std::map<std::string, std::string>> hitsRes = DBWrapper::queryDatabase(db, query);
 
-						query = "select count(*) from PBP p inner join players pitch on pitch.id=p.pitcherid where p.gamedate='"+huDate+"' and p.hitterid="+hitter["id"]+" and p.isPitcherStarter=1 and pitch.throws='"+pitcherThrows+"' and p.event > 0";
-						std::vector<std::map<std::string, std::string>> huHitRes = DBWrapper::queryDatabase(db, query);
+   					hits = hitsRes[0]["hits"];
+   				}
+   				ss << gr["gamedate"] << "," << gr["batpos"] << "," << hits << ","
+   				   << gr["inningtype"] << "," << gr["inningnum"] << "," << gr["event"] << "\n";
+   			}
 
-						if (huHitRes[0]["count(*)"].compare("0") == 0) {
-							showHitter = false;
-						}
-					}
-
-					if (huDateRes.empty() && hpDateRes.empty()) {
-						showHitter = false;
-					}
-		    	}
-
-		    	if (showHitter) {
-		    		if (argc > 1) {
-		    		    ss << ":" << hitter["name"] << "\n";
-		    		}
-		    		else {
-		    			ss << hitter["name"] << "\n";
-		    		}
-		    	}
-		    }
-
-			if (!ss.str().empty()) {
-				std::cout << ss.str() << std::endl;
-			}
+    		std::cout << ss.str() << std::endl;
 		}
 
 		++side;
