@@ -15,6 +15,7 @@
 #include <cmath>
 #include <tuple>
 #include <iterator>
+#include <cstring>
 #include "Utils.h"
 
 enum class teamType { AWAY, HOME };
@@ -41,8 +42,19 @@ int main(int argc, char** argv) {
 	sqlite3* db = NULL;
 
 	std::string datestr = "";
-	if (argc > 1) {
-		datestr = argv[1];
+	int side = 0;
+	for (int i = 1; i < argc; ++i) {
+		if (strcmp(argv[i], "-d") == 0) {
+			datestr = argv[++i];
+		}
+		else if (strcmp(argv[i], "-s") == 0) {
+			if (strcmp(argv[i+1], "home") == 0) {
+				side = 1;
+			}
+			else if (strcmp(argv[i+1], "away") == 0) {
+				side = 2;
+			}
+		}
 	}
 
 	if (datestr.empty()) {
@@ -74,7 +86,6 @@ int main(int argc, char** argv) {
 
 	std::ifstream ifs("todaymatchups.txt");
 	std::string line = "";
-	int side = 0;
 
 	while (std::getline(ifs, line)) {
 		std::cout << line << std::endl;
@@ -145,7 +156,7 @@ int main(int argc, char** argv) {
 		}
 
 		if (numGames != std::numeric_limits<int>::min()) {
-	        const int startYear = 2014;
+	        const int startYear = 2013;
 	        const int endYear = 2021;
 
 	        std::string querydatestr = "";
@@ -173,10 +184,11 @@ int main(int argc, char** argv) {
 	    		query = "select p.gamedate,p.inningtype,p.inningnum,p.batpos,p.hitterid,p.event";
 	    		query += " from PBP p";
 	    		query += " where p.gamedate in ("+querydatestr+")";
-	    		query += " and p.pitcherid="+std::to_string(pitcherId)+" and p.isHitterStarter=1";
+	    		query += " and p.pitcherid="+std::to_string(pitcherId)+" and p.isHitterStarter=1 and p.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"'";
 	    		query += " order by p.batpos;";
 
 	    		std::vector<std::map<std::string, std::string>> gameRes = DBWrapper::queryDatabase(db, query);
+	    		std::map<std::string, int> dateCntMap;
 
 	   			for (std::map<std::string, std::string> gr : gameRes) {
 	   				std::string hits = " ";
@@ -186,11 +198,17 @@ int main(int argc, char** argv) {
 
 	   					hits = hitsRes[0]["hits"];
 	   				}
+	   				++dateCntMap[gr["gamedate"]];
+	   				if (argc > 1) {
+	   					ss << ":";
+	   				}
 	   				ss << gr["gamedate"] << "," << gr["batpos"] << "," << hits << ","
 	   				   << gr["inningtype"] << "," << gr["inningnum"] << "," << gr["event"] << "\n";
 	   			}
 
-	    		std::cout << ss.str() << std::endl;
+	   			if (dateCntMap.size() > 1) {
+	    		    std::cout << ss.str() << std::endl;
+	   			}
 	        }
 		}
 
