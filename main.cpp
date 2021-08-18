@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
 			continue;
 		}
 
-		query = "select distinct gamedate from PBP where gamedate < '"+datestr+"' and pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1 order by gamedate desc limit 1";
+		query = "select distinct gamedate from PBP where gamedate < '"+datestr+"' and pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and isPitcherStarter=1 and inningtype='"+(tmType == teamType::AWAY ? "t" : "b") + "' order by gamedate desc";
 		std::vector<std::map<std::string, std::string>> pUmpDateRes = DBWrapper::queryDatabase(db, query);
 
 		if (!pUmpDateRes.empty()) {
@@ -152,27 +152,26 @@ int main(int argc, char** argv) {
 	    	std::stringstream ss;
 	    	ss.str("");
 
-	    	query = "select p.gamedate,p.inningtype,p.inningnum,p.batpos,p.hitterid,p.event";
+	    	query = "select p.gamedate,p.inningtype,p.inningnum,p.batpos,p.hits,p.event";
 	    	query += " from PBP p";
-	    	query += " where p.gamedate='"+pUmpDateRes[0]["gamedate"]+"'";
-	    	query += " and p.pitcherid="+std::to_string(pitcherId)+" and p.isHitterStarter=1";
+	    	query += " where p.gamedate in (";
+	    	std::string puDateStr = "";
+	    	for (std::map<std::string, std::string> puDates : pUmpDateRes) {
+	    		if (!puDateStr.empty()) {
+	    			puDateStr += ",";
+	    		}
+	    		puDateStr += "'"+puDates["gamedate"]+"'";
+	    	}
+	    	query += puDateStr + ") and p.pitcherid="+std::to_string(pitcherId)+" and p.isHitterStarter=1 and p.event > -9999";
 	    	query += " order by p.batpos;";
 
 	    	std::vector<std::map<std::string, std::string>> gameRes = DBWrapper::queryDatabase(db, query);
 
 	    	for (std::map<std::string, std::string> gr : gameRes) {
-	   			std::string hits = " ";
-	   			if (!gr["hitterid"].empty()) {
-	   				query = "select hits from players where id="+gr["hitterid"]+";";
-	   				std::vector<std::map<std::string, std::string>> hitsRes = DBWrapper::queryDatabase(db, query);
-
-   					hits = hitsRes[0]["hits"];
-   				}
-
    				if (argc > 1) {
    					ss << ":";
    				}
-   				ss << gr["gamedate"] << "," << gr["batpos"] << "," << hits << ","
+   				ss << gr["gamedate"] << "," << gr["batpos"] << "," << gr["hits"] << ","
    				   << gr["inningtype"] << "," << gr["inningnum"] << "," << gr["event"] << "\n";
    			}
 
