@@ -152,7 +152,7 @@ int main(int argc, char** argv) {
 	    	std::stringstream ss;
 	    	ss.str("");
 
-	    	query = "select ph.gamedate,pd.inningtype,pd.inningnum,pd.batpos,pd.hits,pd.event";
+	    	query = "select ph.gamedate,ph.isNightGame,pd.inningtype,pd.inningnum,pd.batpos,pd.hits,pd.event";
 	    	query += " from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid";
 	    	query += " where ph.gamedate in (";
 	    	std::string puDateStr = "";
@@ -171,7 +171,14 @@ int main(int argc, char** argv) {
    				if (argc > 1) {
    					ss << ":";
    				}
-   				ss << gr["gamedate"] << "," << gr["batpos"] << "," << gr["hits"] << ","
+   				ss << gr["gamedate"] << ",";
+   				if (gr["isNightGame"][0] == '1') {
+   					ss << "n";
+   				}
+   				else if (gr["isNightGame"][0] == '0') {
+   					ss << "d";
+   				}
+   				ss << "," << gr["batpos"] << "," << gr["hits"] << ","
    				   << gr["inningtype"] << "," << gr["inningnum"] << "," << gr["event"] << "\n";
    			}
 
