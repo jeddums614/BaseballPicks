@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
 		std::cout << tmType << std::endl;
 		std::vector<std::string> gameParts = Utils::split(line);
 
-		if (gameParts.size() < 5) {
+		if (gameParts.size() < 4) {
 			std::cout << "Not all info filled out in todaymatchups.txt for this line" << std::endl;
 			++side;
 			continue;
@@ -110,8 +110,12 @@ int main(int argc, char** argv) {
 		if (pos != std::string::npos) {
 			umpire.insert(pos, "'");
 		}
-		std::string ballpark = gameParts[3];
-		std::string gametime = gameParts[4];
+		std::string dayNight = gameParts[3];
+
+		int gameNumber = 1;
+		if (gameParts.size() == 5) {
+			gameNumber = 2;
+		}
 
 		std::string query = "select id,throws from players where position='P' and (name='" + pitcher +"' or alternatename like '%" + pitcher + "%');";
 		std::vector<std::map<std::string, std::string>> res = DBWrapper::queryDatabase(db, query);
@@ -144,7 +148,7 @@ int main(int argc, char** argv) {
 			continue;
 		}
 
-		query = "select distinct gamedate from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid where ph.gamedate < '"+datestr+"' and pd.pitcherid="+std::to_string(pitcherId)+" and ph.umpire='"+umpire+"' order by ph.gamedate desc";
+		query = "select distinct gamedate from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid where ph.gamedate < '"+datestr+"' and pd.pitcherid="+std::to_string(pitcherId)+" and ph.umpire='"+umpire+"' and pd.isPitcherStarter=1 and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' and ph.gamenumber="+std::to_string(gameNumber)+" and ph.isNightGame="+(dayNight.compare("d") == 0 ? "0" : "1")+" order by ph.gamedate desc";
 		std::vector<std::map<std::string, std::string>> pUmpDateRes = DBWrapper::queryDatabase(db, query);
 
 		if (!pUmpDateRes.empty()) {
@@ -163,7 +167,7 @@ int main(int argc, char** argv) {
 	    		puDateStr += "'"+puDates["gamedate"]+"'";
 	    	}
 	    	query += puDateStr + ") and pd.pitcherid="+std::to_string(pitcherId)+" and pd.isHitterStarter=1 and pd.event > -9999";
-	    	query += " order by pd.batpos;";
+	    	query += " order by pd.batpos,pd.hits;";
 
 	    	std::vector<std::map<std::string, std::string>> gameRes = DBWrapper::queryDatabase(db, query);
 
