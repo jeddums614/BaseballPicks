@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
 			continue;
 		}
 
-		query = "select distinct gamedate from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid where ph.gamedate < '"+datestr+"' and pd.pitcherid="+std::to_string(pitcherId)+" and ph.umpire='"+umpire+"' and pd.isPitcherStarter=1 and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b") + "' order by ph.gamedate desc";
+		query = "select distinct gamedate from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid where ph.gamedate < '"+datestr+"' and pd.pitcherid="+std::to_string(pitcherId)+" and ph.umpire='"+umpire+"' and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b") + "' order by ph.gamedate desc";
 		std::vector<std::map<std::string, std::string>> pUmpDateRes = DBWrapper::queryDatabase(db, query);
 
 		if (!pUmpDateRes.empty()) {
