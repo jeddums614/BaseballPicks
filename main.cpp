@@ -151,39 +151,6 @@ int main(int argc, char** argv) {
     	std::stringstream ss;
     	ss.str("");
 
-    	query = "select distinct gamedate from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid where ph.gamedate < '"+datestr+"' and pd.pitcherid="+std::to_string(pitcherId)+" and ph.umpire='"+umpire+"' and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' and ph.gamenumber="+std::to_string(gameNumber)+" and ph.isNightGame="+(dayNight.compare("d") == 0 ? "0" : "1")+" order by ph.gamedate desc";
-    	std::vector<std::map<std::string, std::string>> pUmpDateRes = DBWrapper::queryDatabase(db, query);
-
-    	query = "select ph.gamedate,ph.isNightGame,pd.inningtype,pd.inningnum,pd.batpos,pd.hits,pd.event";
-    	query += " from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid";
-    	query += " where ph.gamedate in (";
-    	std::string puDateStr = "";
-    	for (std::map<std::string, std::string> puDates : pUmpDateRes) {
-    	    if (!puDateStr.empty()) {
-    	        puDateStr += ",";
-    	    }
-    	    puDateStr += "'"+puDates["gamedate"]+"'";
-	    }
-        query += puDateStr + ") and pd.pitcherid="+std::to_string(pitcherId)+" and pd.isHitterStarter=1 and pd.event > -9999";
-        query += " order by pd.batpos,pd.hits;";
-
-        std::vector<std::map<std::string, std::string>> gameRes = DBWrapper::queryDatabase(db, query);
-
-        for (std::map<std::string, std::string> gr : gameRes) {
-            if (argc > 1) {
-                ss << ":";
-            }
-            ss << gr["gamedate"] << ",";
-            if (gr["isNightGame"][0] == '1') {
-                ss << "n";
-            }
-            else if (gr["isNightGame"][0] == '0') {
-                ss << "d";
-            }
-            ss << "," << gr["batpos"] << "," << gr["hits"] << ","
-               << gr["inningtype"] << "," << gr["inningnum"] << "," << gr["event"] << "\n";
-        }
-
 	    query = "select id,name from players where team like '%"+opponent+"' and position != 'P';";
 	    std::vector<std::map<std::string, std::string>> hitterList = DBWrapper::queryDatabase(db, query);
 
