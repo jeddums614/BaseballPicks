@@ -206,7 +206,7 @@ int main(int argc, char** argv) {
 						else if (gr["isNightGame"][0] == '0') {
 							ss << "d";
 						}
-						ss << "," << gr["batpos"] << "," << gr["hits"] << ","
+						ss << "," << gr["batpos"] << "," << pitcherThrows << ","
 						   << gr["inningtype"] << "," << gr["inningnum"] << "," << gr["event"] << "\n";
 					}
 				}
@@ -242,7 +242,7 @@ int main(int argc, char** argv) {
 						else if (gr["isNightGame"][0] == '0') {
 							ss << "d";
 						}
-						ss << "," << gr["batpos"] << "," << gr["hits"] << ","
+						ss << "," << gr["batpos"] << "," << pitcherThrows << ","
 						   << gr["inningtype"] << "," << gr["inningnum"] << "," << gr["event"] << "\n";
 					}
 				}
