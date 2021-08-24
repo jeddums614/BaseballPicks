@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
                    << gr["inningtype"] << "," << gr["inningnum"] << "," << gr["event"] << "\n";
             }
 
-        	query = "select distinct gamedate from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid where ph.gamedate < '"+datestr+"' and pd.pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' and ph.gamenumber="+std::to_string(gameNumber)+" and ph.isNightGame="+(dayNight.compare("d") == 0 ? "0" : "1")+" and pd.isPitcherStarter=1 and ph.gamedate not in ("+pOppDateStr+") order by ph.gamedate desc";
+        	query = "select distinct gamedate from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid where ph.gamedate < '"+datestr+"' and pd.pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' and ph.gamenumber="+std::to_string(gameNumber)+" and ph.isNightGame="+(dayNight.compare("d") == 0 ? "0" : "1")+" and pd.isPitcherStarter=1 order by ph.gamedate desc";
         	std::vector<std::map<std::string, std::string>> puDates = DBWrapper::queryDatabase(db, query);
 
         	if (!puDates.empty()) {
