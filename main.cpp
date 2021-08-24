@@ -148,10 +148,10 @@ int main(int argc, char** argv) {
 			continue;
 		}
 
-    	query = "select distinct gamedate from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid where ph.gamedate < '"+datestr+"' and pd.pitcherid="+std::to_string(pitcherId)+" and ph.umpire='"+umpire+"' and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' and ph.gamenumber="+std::to_string(gameNumber)+" and ph.isNightGame="+(dayNight.compare("d") == 0 ? "0" : "1")+" order by ph.gamedate desc";
-    	std::vector<std::map<std::string, std::string>> puDates = DBWrapper::queryDatabase(db, query);
+    	query = "select distinct gamedate from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid where ph.gamedate < '"+datestr+"' and pd.pitcherid="+std::to_string(pitcherId)+" and "+(tmType == teamType::AWAY ? "ph.awayteam='"+opponent+"'" : "ph.hometeam='"+opponent+"'")+" and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' and ph.gamenumber="+std::to_string(gameNumber)+" and ph.isNightGame="+(dayNight.compare("d") == 0 ? "0" : "1")+" order by ph.gamedate desc";
+    	std::vector<std::map<std::string, std::string>> pOppDates = DBWrapper::queryDatabase(db, query);
 
-    	if (!puDates.empty()) {
+    	if (!pOppDates.empty()) {
 
         	std::stringstream ss;
         	ss.str("");
@@ -159,15 +159,15 @@ int main(int argc, char** argv) {
         	query = "select ph.gamedate,ph.isNightGame,pd.inningtype,pd.inningnum,pd.batpos,pd.hits,pd.event";
         	query += " from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid";
         	query += " where ph.gamedate in (";
-        	std::string puDateStr = "";
-        	for (std::map<std::string, std::string> puDate : puDates) {
-        	    if (!puDateStr.empty()) {
-        	        puDateStr += ",";
+        	std::string pOppDateStr = "";
+        	for (std::map<std::string, std::string> pOppDate : pOppDates) {
+        	    if (!pOppDateStr.empty()) {
+        	        pOppDateStr += ",";
         	    }
-        	    puDateStr += "'"+puDate["gamedate"]+"'";
+        	    pOppDateStr += "'"+pOppDate["gamedate"]+"'";
     	    }
-            query += puDateStr + ") and pd.pitcherid="+std::to_string(pitcherId)+" and pd.isHitterStarter=1 and pd.event > -9999";
-            query += " order by pd.batpos,pd.hits;";
+            query += pOppDateStr + ") and pd.pitcherid="+std::to_string(pitcherId)+" and pd.isHitterStarter=1 and pd.event > -9999";
+            query += " order by pd.batpos,pd.hits,ph.gamedate;";
 
             std::vector<std::map<std::string, std::string>> gameRes = DBWrapper::queryDatabase(db, query);
 
@@ -186,95 +186,45 @@ int main(int argc, char** argv) {
                    << gr["inningtype"] << "," << gr["inningnum"] << "," << gr["event"] << "\n";
             }
 
-    	    query = "select id,name from players where team like '%"+opponent+"' and position != 'P';";
-    	    std::vector<std::map<std::string, std::string>> hitterList = DBWrapper::queryDatabase(db, query);
+        	query = "select distinct gamedate from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid where ph.gamedate < '"+datestr+"' and pd.pitcherid="+std::to_string(pitcherId)+" and umpire='"+umpire+"' and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' and ph.gamenumber="+std::to_string(gameNumber)+" and ph.isNightGame="+(dayNight.compare("d") == 0 ? "0" : "1")+" order by ph.gamedate desc";
+        	std::vector<std::map<std::string, std::string>> puDates = DBWrapper::queryDatabase(db, query);
 
-    	    for (std::map<std::string, std::string> hitter : hitterList) {
-    	    	query = "select distinct ph.gamedate from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid inner join players pitch on pitch.id=pd.pitcherid where ph.gamedate < '"+datestr+"' and pd.hitterid="+hitter["id"]+" and ph.umpire='"+umpire+"' and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' and ph.gamenumber="+std::to_string(gameNumber)+" and ph.isNightGame="+(dayNight.compare("d") == 0 ? "0" : "1")+" and pitch.throws='"+pitcherThrows+"' and pd.event >= 0 and pd.isHitterStarter=1 and pd.isPitcherStarter=1 order by ph.gamedate desc";
+        	if (!puDates.empty()) {
 
-        		std::vector<std::map<std::string, std::string>> huDates = DBWrapper::queryDatabase(db, query);
+        		ss << "\n";
 
-        		query = "select distinct ph.gamedate from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid inner join players pitch on pitch.id=pd.pitcherid where ph.gamedate < '"+datestr+"' and pd.hitterid="+hitter["id"]+" and pd.pitcherid='"+std::to_string(pitcherId)+"' and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' and ph.gamenumber="+std::to_string(gameNumber)+" and ph.isNightGame="+(dayNight.compare("d") == 0 ? "0" : "1")+" and pd.event >= 0 and pd.isHitterStarter=1 and pd.isPitcherStarter=1 order by ph.gamedate desc";
+            	query = "select ph.gamedate,ph.isNightGame,pd.inningtype,pd.inningnum,pd.batpos,pd.hits,pd.event";
+            	query += " from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid";
+            	query += " where ph.gamedate in (";
+            	std::string puDateStr = "";
+            	for (std::map<std::string, std::string> puDate : puDates) {
+            	    if (!puDateStr.empty()) {
+            	        puDateStr += ",";
+            	    }
+            	    puDateStr += "'"+puDate["gamedate"]+"'";
+        	    }
+                query += puDateStr + ") and pd.pitcherid="+std::to_string(pitcherId)+" and pd.isHitterStarter=1 and pd.event > -9999";
+                query += " order by pd.batpos,pd.hits,ph.gamedate;";
 
-        		std::vector<std::map<std::string, std::string>> hpDates = DBWrapper::queryDatabase(db, query);
+                std::vector<std::map<std::string, std::string>> gameRes = DBWrapper::queryDatabase(db, query);
 
-        		if (!hpDates.empty() || !huDates.empty()) {
+                for (std::map<std::string, std::string> gr : gameRes) {
+                    if (argc > 1) {
+                        ss << ":";
+                    }
+                    ss << gr["gamedate"] << ",";
+                    if (gr["isNightGame"][0] == '1') {
+                        ss << "n";
+                    }
+                    else if (gr["isNightGame"][0] == '0') {
+                        ss << "d";
+                    }
+                    ss << "," << gr["batpos"] << "," << gr["hits"] << ","
+                       << gr["inningtype"] << "," << gr["inningnum"] << "," << gr["event"] << "\n";
+                }
 
-    				if (!hpDates.empty()) {
-    					query = "select ph.gamedate,ph.isNightGame,pd.inningtype,pd.inningnum,pd.batpos,pd.hits,pd.event";
-    					query += " from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid";
-    					query += " where ph.gamedate in (";
-    					std::string hpDateStr = "";
-    					for (std::map<std::string, std::string> hpDate : hpDates) {
-    						if (!hpDateStr.empty()) {
-    							hpDateStr += ",";
-    						}
-    						hpDateStr += "'"+hpDate["gamedate"]+"'";
-    					}
-    					query += hpDateStr + ") and pd.hitterid="+hitter["id"]+" and pd.pitcherid="+std::to_string(pitcherId)+" and pd.event > -9999";
-    					query += " order by pd.batpos,ph.gamedate;";
-
-    					std::vector<std::map<std::string, std::string>> hpGameRes = DBWrapper::queryDatabase(db, query);
-
-    					if (!hpGameRes.empty()) {
-    						ss << "\n" << hitter["name"] << "," << pitcher << "\n";
-    					}
-
-    					for (std::map<std::string, std::string> gr : hpGameRes) {
-    						if (argc > 1) {
-    							ss << ":";
-    						}
-    						ss << gr["gamedate"] << ",";
-    						if (gr["isNightGame"][0] == '1') {
-    							ss << "n";
-    						}
-    						else if (gr["isNightGame"][0] == '0') {
-    							ss << "d";
-    						}
-    						ss << "," << gr["batpos"] << "," << pitcherThrows << ","
-    						   << gr["inningtype"] << "," << gr["inningnum"] << "," << gr["event"] << "\n";
-    					}
-    				}
-
-    				if (!huDates.empty()) {
-    					query = "select ph.gamedate,ph.isNightGame,pd.inningtype,pd.inningnum,pd.batpos,pd.hits,pd.event";
-    					query += " from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid";
-    					query += " where ph.gamedate in (";
-    					std::string huDateStr = "";
-    					for (std::map<std::string, std::string> huDate : huDates) {
-    						if (!huDateStr.empty()) {
-    							huDateStr += ",";
-    						}
-    						huDateStr += "'"+huDate["gamedate"]+"'";
-    					}
-    					query += huDateStr + ") and pd.hitterid="+hitter["id"]+" and pd.throws='"+pitcherThrows+"' and pd.event > -9999 and ph.gamenumber="+std::to_string(gameNumber)+" and ph.isNightGame="+(dayNight.compare("d") == 0 ? "0" : "1")+" and pd.isHitterStarter=1 and pd.isPitcherStarter=1";
-    					query += " order by pd.batpos,ph.gamedate;";
-
-    					std::vector<std::map<std::string, std::string>> huGameRes = DBWrapper::queryDatabase(db, query);
-
-    					if (!huGameRes.empty()) {
-    						ss << "\n" << hitter["name"] << "," << umpire << "\n";
-    					}
-
-    					for (std::map<std::string, std::string> gr : huGameRes) {
-    						if (argc > 1) {
-    							ss << ":";
-    						}
-    						ss << gr["gamedate"] << ",";
-    						if (gr["isNightGame"][0] == '1') {
-    							ss << "n";
-    						}
-    						else if (gr["isNightGame"][0] == '0') {
-    							ss << "d";
-    						}
-    						ss << "," << gr["batpos"] << "," << pitcherThrows << ","
-    						   << gr["inningtype"] << "," << gr["inningnum"] << "," << gr["event"] << "\n";
-    					}
-    				}
-        		}
-    	    }
-
-        	std::cout << ss.str() << std::endl;
+            	std::cout << ss.str() << std::endl;
+        	}
     	}
 
 		++side;
