@@ -171,6 +171,10 @@ int main(int argc, char** argv) {
 
             std::vector<std::map<std::string, std::string>> gameRes = DBWrapper::queryDatabase(db, query);
 
+            if (!gameRes.empty()) {
+            	ss << pitcher << "," << opponent << "\n";
+            }
+
             for (std::map<std::string, std::string> gr : gameRes) {
                 if (argc > 1) {
                     ss << ":";
@@ -208,6 +212,10 @@ int main(int argc, char** argv) {
             query += " order by pd.batpos,pd.hits,ph.gamedate;";
 
             std::vector<std::map<std::string, std::string>> gameRes = DBWrapper::queryDatabase(db, query);
+
+            if (!gameRes.empty()) {
+            	ss << pitcher << "," << umpire << "\n";
+            }
 
             for (std::map<std::string, std::string> gr : gameRes) {
                 if (argc > 1) {
