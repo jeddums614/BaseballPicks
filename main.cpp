@@ -231,9 +231,11 @@ int main(int argc, char** argv) {
                 ss << "," << gr["batpos"] << "," << gr["hits"] << ","
                    << gr["inningtype"] << "," << gr["inningnum"] << "," << gr["event"] << "\n";
             }
-
-            std::cout << ss.str() << std::endl;
     	}
+
+        if (!ss.str().empty()) {
+            std::cout << ss.str() << std::endl;
+        }
 
 		++side;
 	}
