@@ -239,27 +239,22 @@ int main(int argc, char** argv) {
             		    if (std::find_if(lineupBatPos.begin(), lineupBatPos.end(), [&](char c) { return c == std::get<2>(tp);}) == lineupBatPos.end()) {
             			    lineupBatPos.push_back(std::get<2>(tp));
 
-            			    /*if (pitcherThrows[0] != std::get<2>(tp) && std::get<2>(tp) != 'S' && std::find(lineupBatPos.begin(), lineupBatPos.end(), 'S') == lineupBatPos.end()) {
+            			    if (pitcherThrows[0] != std::get<2>(tp) && std::get<2>(tp) != 'S' && std::find(lineupBatPos.begin(), lineupBatPos.end(), 'S') == lineupBatPos.end() && batposStats.find(std::make_pair(std::get<0>(tp), 'S')) == batposStats.end()) {
             			    	lineupBatPos.push_back('S');
             			    }
             			    else if (std::get<2>(tp) == 'S') {
-            			    	if (pitcherThrows[0] == 'R' && std::find(lineupBatPos.begin(), lineupBatPos.end(), 'L') == lineupBatPos.end()) {
+            			    	if (pitcherThrows[0] == 'R' && std::find(lineupBatPos.begin(), lineupBatPos.end(), 'L') == lineupBatPos.end() && batposStats.find(std::make_pair(std::get<0>(tp), 'L')) == batposStats.end()) {
             			    		lineupBatPos.push_back('L');
             			    	}
-            			    	else if (pitcherThrows[0] == 'L' && std::find(lineupBatPos.begin(), lineupBatPos.end(), 'R') == lineupBatPos.end()) {
+            			    	else if (pitcherThrows[0] == 'L' && std::find(lineupBatPos.begin(), lineupBatPos.end(), 'R') == lineupBatPos.end() && batposStats.find(std::make_pair(std::get<0>(tp), 'R')) == batposStats.end()) {
             			    		lineupBatPos.push_back('R');
             			    	}
-            			    }*/
+            			    }
             		    }
             		}
             	}
             	else if (std::get<3>(tp) == 'N') {
             		lineupBatPos.erase(std::remove_if(lineupBatPos.begin(), lineupBatPos.end(), [&](char c) { return c == std::get<2>(tp);}), lineupBatPos.end());
-            		/*for (char c : {'L', 'R', 'S'}) {
-            			if (c != std::get<2>(tp) && (batposStats.find(std::make_pair(std::get<0>(tp), c)) == batposStats.end()) && (std::find_if(lineupBatPos.begin(), lineupBatPos.end(), [&](char cs){ return cs == c;}) == lineupBatPos.end())) {
-            				lineupBatPos.push_back(c);
-            			}
-            		}*/
             	}
 
             	++batposStats[std::make_pair(std::get<0>(tp), std::get<2>(tp))];
