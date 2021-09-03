@@ -160,7 +160,7 @@ int main(int argc, char** argv) {
 
             if (!hpsides.empty()) {
             	for (std::map<std::string, std::string> hpside : hpsides) {
-            		query = "select distinct ph.gamedate,pd.hits from PBPDetails pd inner join PBPHeader ph on ph.id=pd.headerid where pd.hits='"+hpside["hits"]+"' and pd.pitcherid="+std::to_string(pitcherId)+" and pd.batpos="+std::to_string(i+1)+" and ph.isNightGame="+(dayNight[0] == 'n' ? "1" : "0")+" and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' and pd.event >= 0 and ph.gamenumber="+std::to_string(gameNumber);
+            		query = "select distinct ph.gamedate,pd.hits from PBPDetails pd inner join PBPHeader ph on ph.id=pd.headerid where ph.gamedate < '"+datestr+"' and pd.hits='"+hpside["hits"]+"' and pd.pitcherid="+std::to_string(pitcherId)+" and pd.batpos="+std::to_string(i+1)+" and ph.isNightGame="+(dayNight[0] == 'n' ? "1" : "0")+" and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' and pd.event >= 0 and ph.gamenumber="+std::to_string(gameNumber);
             		if (!umpire.empty()) {
             			query += " and ph.umpire='"+umpire+"'";
             		}
@@ -277,7 +277,7 @@ int main(int argc, char** argv) {
 											std::cout<<elem;
 									});
 					std::cout << "\n";
-					std::string hitterQuery = "select distinct hitter.name from PBPDetails pd inner join PBPHeader ph on ph.id=pd.headerid inner join players hitter on hitter.id=pd.hitterid where pd.pitcherid="+std::to_string(pitcherId)+" and pd.hitterid in (select id from players where team like '%"+opponent+"' and position != 'P') and pd.batpos="+std::to_string(printBatPos)+" and ph.isNightGame="+(dayNight[0] == 'n' ? "1" : "0")+" and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' and pd.event > 0 and ph.gamenumber="+std::to_string(gameNumber)+" and pd.hits in (";
+					std::string hitterQuery = "select distinct hitter.name from PBPDetails pd inner join PBPHeader ph on ph.id=pd.headerid inner join players hitter on hitter.id=pd.hitterid where ph.gamedate < '"+datestr+"' and pd.pitcherid="+std::to_string(pitcherId)+" and pd.hitterid in (select id from players where team like '%"+opponent+"' and position != 'P') and pd.batpos="+std::to_string(printBatPos)+" and ph.isNightGame="+(dayNight[0] == 'n' ? "1" : "0")+" and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' and pd.event > 0 and ph.gamenumber="+std::to_string(gameNumber)+" and pd.hits in (";
 					for (char s : sides) {
 						hitterQuery += "'";
 						hitterQuery += s;
