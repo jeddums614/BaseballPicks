@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
 		std::cout << tmType << std::endl;
 		std::vector<std::string> gameParts = Utils::split(line);
 
-		if (gameParts.size() < 4) {
+		if (gameParts.size() < 3) {
 			std::cout << "Not all info filled out in todaymatchups.txt for this line" << std::endl;
 			++side;
 			continue;
@@ -105,15 +105,10 @@ int main(int argc, char** argv) {
 			continue;
 		}
 		std::string opponent = gameParts[1];
-		std::string umpire = gameParts[2];
-		std::size_t pos = umpire.find("'");
-		if (pos != std::string::npos) {
-			umpire.insert(pos, "'");
-		}
-		std::string dayNight = gameParts[3];
+		std::string dayNight = gameParts[2];
 
 	    int gameNumber = 1;
-	    if (gameParts.size() == 5) {
+	    if (gameParts.size() == 4) {
 	    	gameNumber = 2;
 	    }
 
@@ -165,12 +160,12 @@ int main(int argc, char** argv) {
             		std::vector<std::map<std::string, std::string>> hpsidedates = DBWrapper::queryDatabase(db, query);
 
             		for (std::map<std::string, std::string> hpsidedate : hpsidedates) {
-            			query = "select count(*) from PBPDetails pd inner join PBPHeader ph on ph.id=pd.headerid where pd.hits='"+hpsidedate["hits"]+"' and pd.pitcherid="+std::to_string(pitcherId)+" and pd.batpos="+std::to_string(i+1)+" and pd.event > 0 and ph.gamedate='"+hpsidedate["gamedate"]+"' and pd.isHitterStarter=1 and pd.isPitcherStarter=1;";
+            			query = "select count(*) from PBPDetails pd inner join PBPHeader ph on ph.id=pd.headerid where pd.hits='"+hpsidedate["hits"]+"' and pd.pitcherid="+std::to_string(pitcherId)+" and pd.batpos="+std::to_string(i+1)+" and pd.event > 0 and ph.gamedate='"+hpsidedate["gamedate"]+"' and pd.isHitterStarter=1 and pd.isPitcherStarter=1 and pd.inningnum <= 7;";
             			std::vector<std::map<std::string, std::string>> hitQuery = DBWrapper::queryDatabase(db, query);
 
            				int hitcount = std::stoi(hitQuery[0]["count(*)"]);
            				if (hitcount == 0) {
-                			query = "select count(*) from PBPDetails pd inner join PBPHeader ph on ph.id=pd.headerid where pd.hits='"+hpsidedate["hits"]+"' and pd.pitcherid="+std::to_string(pitcherId)+" and pd.batpos="+std::to_string(i+1)+" and pd.event = 0 and ph.gamedate='"+hpsidedate["gamedate"]+"' and pd.isHitterStarter=1 and pd.isPitcherStarter=1;";
+                			query = "select count(*) from PBPDetails pd inner join PBPHeader ph on ph.id=pd.headerid where pd.hits='"+hpsidedate["hits"]+"' and pd.pitcherid="+std::to_string(pitcherId)+" and pd.batpos="+std::to_string(i+1)+" and pd.event = 0 and ph.gamedate='"+hpsidedate["gamedate"]+"' and pd.isHitterStarter=1 and pd.isPitcherStarter=1 and pd.inningnum <= 7;";
                 			std::vector<std::map<std::string, std::string>> abQuery = DBWrapper::queryDatabase(db, query);
                 			int abcount = std::stoi(abQuery[0]["count(*)"]);
                 			if (abcount > 0) {
@@ -284,10 +279,10 @@ int main(int argc, char** argv) {
 						if (quotepos != std::string::npos) {
 							tmpHitterName.insert(quotepos, "'");
 						}
-						query = "select distinct ph.gamedate from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid inner join players hitter on hitter.id=pd.hitterid where pd.pitcherid="+std::to_string(pitcherId)+" and hitter.name='"+tmpHitterName+"' and ph.gamedate < '"+datestr+"' and pd.batpos="+std::to_string(printBatPos)+" and ph.isNightGame="+(dayNight[0] == 'n' ? "1" : "0")+" and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' and pd.event > 0 and ph.gamenumber="+std::to_string(gameNumber)+" and "+(tmType == teamType::AWAY ? "ph.hometeam='"+pitcherTeam+"'" : "ph.awayteam='"+pitcherTeam+"'")+";";
+						query = "select distinct ph.gamedate from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid inner join players hitter on hitter.id=pd.hitterid where pd.pitcherid="+std::to_string(pitcherId)+" and hitter.name='"+tmpHitterName+"' and ph.gamedate < '"+datestr+"' and pd.batpos="+std::to_string(printBatPos)+" and ph.isNightGame="+(dayNight[0] == 'n' ? "1" : "0")+" and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' and pd.event > 0 and ph.gamenumber="+std::to_string(gameNumber)+" and "+(tmType == teamType::AWAY ? "ph.hometeam='"+pitcherTeam+"'" : "ph.awayteam='"+pitcherTeam+"'")+" and pd.isHitterStarter=1 and pd.isPitcherStarter=1 and pd.inningnum <= 7;";
 						std::vector<std::map<std::string, std::string>> hitDateQuery = DBWrapper::queryDatabase(db, query);
 
-						query = "select distinct ph.gamedate from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid inner join players hitter on hitter.id=pd.hitterid where pd.pitcherid="+std::to_string(pitcherId)+" and hitter.name='"+tmpHitterName+"' and ph.gamedate < '"+datestr+"' and pd.batpos="+std::to_string(printBatPos)+" and ph.isNightGame="+(dayNight[0] == 'n' ? "1" : "0")+" and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' and pd.event >= 0 and ph.gamenumber="+std::to_string(gameNumber)+" and "+(tmType == teamType::AWAY ? "ph.hometeam='"+pitcherTeam+"'" : "ph.awayteam='"+pitcherTeam+"'")+";";
+						query = "select distinct ph.gamedate from PBPHeader ph inner join PBPDetails pd on ph.id=pd.headerid inner join players hitter on hitter.id=pd.hitterid where pd.pitcherid="+std::to_string(pitcherId)+" and hitter.name='"+tmpHitterName+"' and ph.gamedate < '"+datestr+"' and pd.batpos="+std::to_string(printBatPos)+" and ph.isNightGame="+(dayNight[0] == 'n' ? "1" : "0")+" and pd.inningtype='"+(tmType == teamType::AWAY ? "t" : "b")+"' and pd.event >= 0 and ph.gamenumber="+std::to_string(gameNumber)+" and "+(tmType == teamType::AWAY ? "ph.hometeam='"+pitcherTeam+"'" : "ph.awayteam='"+pitcherTeam+"'")+" and pd.isHitterStarter=1 and pd.isPitcherStarter=1 and pd.inningnum <= 7;";
 						std::vector<std::map<std::string, std::string>> abDateQuery = DBWrapper::queryDatabase(db, query);
 
 						if (hitDateQuery.size() == abDateQuery.size() && abDateQuery.size() > 0) {
