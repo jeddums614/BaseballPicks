@@ -57,11 +57,12 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	int year = std::numeric_limits<int>::min();
 	if (datestr.empty()) {
 	    auto todaydate = std::chrono::system_clock::now();
 	    std::time_t now_c = std::chrono::system_clock::to_time_t(todaydate);
 	    std::tm now_tm = *std::localtime(&now_c);
-	    int year = now_tm.tm_year+1900;
+	    year = now_tm.tm_year+1900;
 	    datestr = std::to_string(year) + "-";
 	    if (now_tm.tm_mon+1 < 10) {
 		    datestr += "0";
@@ -71,6 +72,19 @@ int main(int argc, char** argv) {
 		    datestr += "0";
 	    }
 	    datestr += std::to_string(now_tm.tm_mday);
+	}
+	else {
+		try {
+		    year = std::stoi(datestr.substr(0,4));
+		}
+		catch (...) {
+			year = std::numeric_limits<int>::min();
+		}
+	}
+
+	if (year <= 0) {
+		std::cout << "invalid year in date string" << std::endl;
+		return -3;
 	}
 	const std::string startdate = "2021-04-01";
 
@@ -83,6 +97,17 @@ int main(int argc, char** argv) {
 	    sqlite3_close_v2(db);
 		return (1);
 	}
+
+	std::stringstream dirpath;
+	dirpath.str(std::string());
+
+	dirpath << "Results/" << year << "/";
+	if (!std::filesystem::exists(dirpath.str()))
+	{
+		std::filesystem::create_directories(dirpath.str());
+	}
+
+	std::ofstream ofs(dirpath.str()+datestr+".csv");
 
 	std::ifstream ifs("todaymatchups.txt");
 	std::string line = "";
@@ -153,7 +178,7 @@ int main(int argc, char** argv) {
 			continue;
 		}
 
-    	query = "select id,name from players where team like '%"+opponent+"';";
+    	query = "select id,name from players where team like '%"+opponent+"' and position != 'P';";
     	std::vector<std::map<std::string, std::string>> hitterList = DBWrapper::queryDatabase(db, query);
 
     	for (std::map<std::string, std::string> hitter : hitterList) {
@@ -218,16 +243,24 @@ int main(int argc, char** argv) {
     		if (denominator > 0) {
     			babip = (hits - homeruns)/denominator;
 
-    			if (argc > 1) {
-    			    std::cout << "*";
-    			}
-    			std::cout << hitter["name"] << " - " << std::fixed << std::setprecision(3) << babip << std::endl;
+    			ofs << datestr << "," << hitter["name"]
+							   << "," << pitcher
+							   << "," << opponent
+							   << "," << pitcherTeam
+							   << "," << tmType
+							   << "," << dayNight
+							   << "," << gameNumber
+							   << "," << std::fixed << std::setprecision(3) << babip << "\n";
     		}
     		else {
-    			if (argc > 1) {
-    			    std::cout << "*";
-    			}
-    			std::cout << hitter["name"] << " - " << std::numeric_limits<double>::infinity() << std::endl;
+    			ofs << datestr << "," << hitter["name"]
+							   << "," << pitcher
+							   << "," << opponent
+							   << "," << pitcherTeam
+							   << "," << tmType
+							   << "," << dayNight
+							   << "," << gameNumber
+							   << "," << std::numeric_limits<double>::infinity() << "\n";
     		}
     	}
 
